@@ -1,7 +1,3 @@
-let hello = "Hi";
+let hi = "Hello, World!";
 
-let helloWorld = <template>
-    <p>{{ props.hello }}</p>
-</template>;
-
-write(template);
+write(name);

@@ -1,5 +1,31 @@
 package lexer
 
+type LexerToken struct {
+	Type  Token  `json:"token"`
+	Value string `json:"value"`
+	Info  struct {
+		File string `json:"file"`
+		Line int    `json:"line"`
+		Pos  int    `json:"pos"`
+	}
+}
+
+func newLexerToken(t Token, v string, file string, line, pos int) LexerToken {
+	return LexerToken{
+		Type:  t,
+		Value: v,
+		Info: struct {
+			File string `json:"file"`
+			Line int    `json:"line"`
+			Pos  int    `json:"pos"`
+		}{
+			File: file,
+			Line: line + 1,
+			Pos:  pos,
+		},
+	}
+}
+
 type Token int
 
 const (
@@ -41,6 +67,8 @@ const (
 	UseToken
 	// Func creates a new function
 	Func
+	// FuncCall calls a function
+	FuncCall
 	// ParantesisStart is the start of a parantesis: (
 	ParantesisStart
 	// ParantesisEnd is the end of a parantesis: )
@@ -51,6 +79,8 @@ const (
 	CurlyBraceEnd
 	// Return returns a value
 	Return
+	// Identifier is an identifier
+	Identifier
 
 	// Unknown is an unknown token
 	Unknown = iota + 1000
@@ -90,6 +120,8 @@ func (t Token) String() string {
 		return "use"
 	case Func:
 		return "func"
+	case FuncCall:
+		return "funcCall"
 	case ParantesisStart:
 		return "("
 	case ParantesisEnd:

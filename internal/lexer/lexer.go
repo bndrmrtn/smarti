@@ -6,7 +6,7 @@ import (
 )
 
 type Lexer struct {
-	Nodes []Node
+	Tokens []LexerToken
 
 	entryFile  string
 	otherFiles []string
@@ -14,25 +14,25 @@ type Lexer struct {
 	pos int
 }
 
-func NewInterpreter(entry string, files ...string) (*Lexer, error) {
+func NewLexer(entry string, files ...string) *Lexer {
 	return &Lexer{
 		entryFile:  entry,
 		otherFiles: files,
-	}, nil
+	}
 }
 
 func (l *Lexer) Parse() error {
-	nodes, err := l.parse(l.entryFile)
+	tokens, err := l.parse(l.entryFile)
 	if err != nil {
 		return err
 	}
 
-	l.Nodes = nodes
+	l.Tokens = tokens
 
 	return nil
 }
 
-func (l *Lexer) parse(file string) ([]Node, error) {
+func (l *Lexer) parse(file string) ([]LexerToken, error) {
 	osFile, err := os.Open(file)
 	if err != nil {
 		return nil, err
@@ -46,34 +46,51 @@ func (l *Lexer) parse(file string) ([]Node, error) {
 	}
 
 	var (
-		content       = string(b) + "\n"
+		content       = string(b) + "\n" // Hozzáadunk egy \n-t a fájl végéhez, hogy biztosan befejezzük az utolsó sort
 		contentLength = len(content)
 		inx           = 0
-
-		line = 0
-		pos  = 0
+		line          = 0
+		pos           = 0
+		tokens        []LexerToken
 	)
 
 	for inx < contentLength {
 		char := content[inx]
 
-		// Handle new lines and spaces
-		newLineLexer(char, &inx, &line, &pos)
+		// Kezeljük a sortöréseket és szóközöket
+		newLineLexer(char, &line, &pos)
 		spaceLexer(char, &inx, &pos)
 
-		// Handle comments
+		// Kezeljük a kommenteket
 		singleLineCommentLexer(&inx, &pos, &line, contentLength, content)
 		multiLineCommentLexer(&inx, &line, &pos, contentLength, content)
 
-		// Handle tokens
-		if matchToken(Let, inx, contentLength, content) {
-			letKeywordLexer(file, &inx, &pos, &line, contentLength, content)
+		// Kezeljük a tokeneket
+		if matchToken(Let, &inx, &line, &pos, contentLength, content) {
+			tokens = append(tokens, newLexerToken(Let, nextWord(&inx, &line, &pos, contentLength, content), file, line, pos))
 		}
 
-		// Increment index
+		if matchToken(Const, &inx, &line, &pos, contentLength, content) {
+			tokens = append(tokens, newLexerToken(Const, nextWord(&inx, &line, &pos, contentLength, content), file, line, pos))
+		}
+
+		if matchToken(Assign, &inx, &line, &pos, contentLength, content) {
+			tokens = append(tokens, newLexerToken(Assign, nextValue(&inx, &line, &pos, contentLength, content), file, line, pos))
+		}
+
+		if isIdentifier(char) {
+			funcName := nextWord(&inx, &line, &pos, contentLength, content)
+			if content[inx] == '(' {
+				tokens = append(tokens, functionCallLexer(funcName, &inx, &line, &pos, contentLength, content, file))
+			} else if funcName != "" {
+				tokens = append(tokens, newLexerToken(Identifier, funcName, file, line, pos))
+			}
+		}
+
+		// Növeljük az indexet és pozíciót
 		inx++
 		pos++
 	}
 
-	return nil, nil
+	return tokens, nil
 }

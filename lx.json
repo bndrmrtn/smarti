@@ -1,0 +1,29 @@
+[
+  {
+    "token": 1,
+    "value": "hi",
+    "Info": {
+      "file": "language/app.sml",
+      "line": 1,
+      "pos": 6
+    }
+  },
+  {
+    "token": 3,
+    "value": "\"Hello, World!\"",
+    "Info": {
+      "file": "language/app.sml",
+      "line": 1,
+      "pos": 24
+    }
+  },
+  {
+    "token": 116,
+    "value": "write([name])",
+    "Info": {
+      "file": "language/app.sml",
+      "line": 3,
+      "pos": 13
+    }
+  }
+]

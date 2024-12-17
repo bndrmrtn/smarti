@@ -29,17 +29,28 @@ func (p *Parser) parse() error {
 		tokenLen = len(p.tokens)
 	)
 
-	for inx+1 < tokenLen {
+	for inx < tokenLen {
 		token := p.tokens[inx]
 		inx++
+
+		fmt.Println(token)
 
 		switch token.Type {
 		case lexer.Let, lexer.Const:
 			info := getInfo(token)
-			value, typ, ref := getType(p.tokens[inx])
+			next := p.tokens[inx]
+			value, typ, ref := getType(next)
 			if err := p.canAssign(token.Value, true); err != nil {
 				return NewErrWithPos(info, err.Error())
 			}
+
+			if next.Type != lexer.Assign {
+				value = "nil"
+				typ = "nil"
+			} else {
+				inx++
+			}
+
 			n := Node{
 				IsReference: ref,
 				Token:       token.Type,
@@ -49,7 +60,6 @@ func (p *Parser) parse() error {
 				Info:        info,
 			}
 			p.Nodes = append(p.Nodes, n)
-			inx++
 			continue
 		case lexer.Assign:
 			info := getInfo(token)
@@ -70,7 +80,15 @@ func (p *Parser) parse() error {
 			continue
 		case lexer.FuncCall:
 			info := getInfo(token)
-			fmt.Println(info)
+			fn, args := getFuncCall(token.Value)
+			n := Node{
+				Token: token.Type,
+				Name:  fn,
+				Args:  args,
+				Info:  info,
+			}
+			p.Nodes = append(p.Nodes, n)
+			continue
 		}
 	}
 

@@ -18,12 +18,30 @@
     }
   },
   {
-    "token": 116,
-    "value": "write([name])",
+    "token": 2,
+    "value": "html",
     "Info": {
       "file": "language/app.sml",
       "line": 3,
-      "pos": 13
+      "pos": 11
+    }
+  },
+  {
+    "token": 3,
+    "value": "<>\n    <h1>Hello HTML!</h1>\n</>",
+    "Info": {
+      "file": "language/app.sml",
+      "line": 3,
+      "pos": 45
+    }
+  },
+  {
+    "token": 116,
+    "value": "write(\"Hello\",\"World!\")",
+    "Info": {
+      "file": "language/app.sml",
+      "line": 5,
+      "pos": 26
     }
   }
 ]

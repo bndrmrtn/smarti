@@ -69,3 +69,98 @@ func isIdentifier(s string) bool {
 	}
 	return true
 }
+
+func getFuncCall(s string) (string, []Node) {
+	// Először a függvény nevét választjuk le a nyitó zárójel előtt
+	funcName := ""
+	parenStart := strings.Index(s, "(")
+	if parenStart != -1 {
+		funcName = s[:parenStart]
+	} else {
+		// Ha nincs nyitó zárójel, akkor nem függvényhívás
+		return "", nil
+	}
+
+	// Argumentumok kinyerése a zárójelek között
+	argsString := s[parenStart+1 : len(s)-1] // Levágjuk a zárójeleket
+
+	// Argumentumok kinyerése és feldolgozása
+	args := parseArguments(argsString)
+
+	return funcName, args
+}
+
+// parseArguments feldolgozza a függvényhívás argumentumait
+func parseArguments(argsString string) []Node {
+	var args []Node
+	// Először eltávolítjuk a felesleges szóközöket
+	argsString = strings.TrimSpace(argsString)
+
+	// Ha üres a string, akkor nincs argumentum
+	if len(argsString) == 0 {
+		return args
+	}
+
+	// Az argumentumokat felbontjuk az egyes elemekre
+	argStrings := splitArguments(argsString)
+
+	// Argumentumok Node-okká alakítása
+	for _, arg := range argStrings {
+		// Az argumentumot LexerToken-né alakítjuk
+		t := lexer.LexerToken{Value: arg}
+
+		// A getType segítségével meghatározzuk az értéket, típust és referencia állapotot
+		value, contentType, isReference := getType(t)
+
+		// Az argumentumból Node-ot készítünk
+		args = append(args, Node{
+			IsReference: isReference,
+			Type:        contentType,
+			Value:       value,
+			Children:    nil, // Nincs gyerek elem, ha nem összetett argumentum
+		})
+	}
+
+	return args
+}
+
+// splitArguments felbontja az argumentumokat
+func splitArguments(argsString string) []string {
+	var parts []string
+	insideQuotes := false
+	insideBrackets := false
+	var currentArg strings.Builder
+
+	for i := 0; i < len(argsString); i++ {
+		char := argsString[i]
+
+		// Kezeljük a stringekben lévő idézőjeleket
+		if char == '"' || char == '\'' {
+			insideQuotes = !insideQuotes
+		}
+
+		// Kezeljük a kocka zárójeleket
+		if char == '[' {
+			insideBrackets = true
+		}
+		if char == ']' {
+			insideBrackets = false
+		}
+
+		// Ha nem vagyunk idézőjelekben és nem vagyunk kocka zárójelben
+		// és elérünk egy vesszőt, akkor új argumentum kezdődik
+		if char == ',' && !insideQuotes && !insideBrackets {
+			parts = append(parts, currentArg.String())
+			currentArg.Reset()
+		} else {
+			currentArg.WriteByte(char)
+		}
+	}
+
+	// Ne hagyjuk el az utolsó elemet sem
+	if currentArg.Len() > 0 {
+		parts = append(parts, currentArg.String())
+	}
+
+	return parts
+}

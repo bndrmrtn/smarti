@@ -111,9 +111,9 @@ func (t Token) String() string {
 	case MultiLineCommentEnd:
 		return "*/"
 	case TemplateStart:
-		return "<template>"
+		return "<>"
 	case TemplateEnd:
-		return "</template>"
+		return "</>"
 	case Export:
 		return "export"
 	case UseToken:
@@ -161,9 +161,9 @@ func isToken(s string) Token {
 		return MultiLineCommentStart
 	case "*/":
 		return MultiLineCommentEnd
-	case "<template>":
+	case "<>":
 		return TemplateStart
-	case "</template>":
+	case "</>":
 		return TemplateEnd
 	default:
 		return Unknown

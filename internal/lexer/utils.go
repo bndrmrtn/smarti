@@ -338,5 +338,7 @@ func functionCallLexer(funcName string, inx, line, pos *int, contentLength int, 
 	}
 
 	// Return the function call token with the function name and arguments
-	return newLexerToken(FuncCall, fmt.Sprintf("%s(%v)", funcName, args), file, *line, *pos)
+	argStr := fmt.Sprintf("%v", args)
+	fn := fmt.Sprintf("%s(%s)", funcName, argStr[1:len(argStr)-1])
+	return newLexerToken(FuncCall, fn, file, *line, *pos)
 }

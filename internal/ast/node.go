@@ -1,21 +1,30 @@
 package ast
 
-import "github.com/smlgh/smarti/internal/lexer"
+import (
+	"github.com/fatih/color"
+	"github.com/smlgh/smarti/internal/lexer"
+)
 
 type Node struct {
-	IsReference bool        `json:"is_reference"`
-	Token       lexer.Token `json:"token"`
-	Name        string      `json:"name"`
-	Type        string      `json:"type"`
-	Value       interface{} `json:"value"`
-	Args        []Node      `json:"args"`
-	Children    []Node      `json:"children"`
+	IsReference bool        `json:"is_reference" yaml:"is_reference"`
+	Token       lexer.Token `json:"token" yaml:"token"`
+	Name        string      `json:"name,omitempty" yaml:"name,omitempty"`
+	Type        NodeType    `json:"type" yaml:"type"`
+	Value       string      `json:"value" yaml:"value"`
+	Args        []Node      `json:"args,omitempty" yaml:"args,omitempty"`
+	Children    []Node      `json:"children,omitempty" yaml:"children,omitempty"`
 
-	Info NodeFileInfo `json:"info"`
+	Info NodeFileInfo `json:"info,omitempty" yaml:"info,omitempty"`
 }
 
 type NodeFileInfo struct {
-	File string `json:"file"`
-	Pos  int    `json:"pos"`
-	Line int    `json:"line"`
+	File string `json:"file" yaml:"file"`
+	Pos  int    `json:"pos" yaml:"pos"`
+	Line int    `json:"line" yaml:"line"`
+}
+
+func (n NodeFileInfo) String() string {
+	blue := color.New(color.FgBlue, color.Bold).SprintFunc()
+
+	return blue(n.File) + ":" + blue(n.Line) + ":" + blue(n.Pos)
 }

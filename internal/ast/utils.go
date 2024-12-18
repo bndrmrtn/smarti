@@ -15,37 +15,42 @@ func getInfo(t lexer.LexerToken) NodeFileInfo {
 	}
 }
 
-func getType(t lexer.LexerToken) (string, string, bool) {
-	var contentType string
+func getType(t lexer.LexerToken) (string, NodeType, bool) {
+	var contentType NodeType
 	var value string
 	var isReference bool
 
 	value = t.Value
 
-	if t.Type == lexer.Assign {
-		if strings.HasPrefix(value, "\"") || strings.HasPrefix(value, "'") {
-			if value[0] == '"' {
-				contentType = "string"
-			} else {
-				contentType = "string_single"
-			}
-
-			value = value[1 : len(value)-1]
-			value = handleEscapedString(value)
-			isReference = false
-		} else if _, err := strconv.Atoi(value); err == nil {
-			contentType = "number"
-			isReference = false
-		} else if isIdentifier(value) {
-			contentType = "variable"
-			isReference = true
+	if value == "nil" {
+		contentType = VarNil
+	} else if strings.HasPrefix(value, "\"") || strings.HasPrefix(value, "'") {
+		if value[0] == '"' {
+			contentType = "string"
 		} else {
-			// Ismeretlen token típus
-			contentType = "unknown"
-			isReference = false
+			contentType = "string_single"
 		}
+
+		value = value[1 : len(value)-1]
+		value = handleEscapedString(value)
+	} else if strings.HasPrefix(value, lexer.TemplateStart.String()) && strings.HasSuffix(value, lexer.TemplateEnd.String()) {
+		startLen := len(lexer.TemplateStart.String())
+		endLen := len(lexer.TemplateEnd.String())
+		value = value[startLen : len(value)-endLen]
+		value = strings.TrimSpace(value)
+		contentType = VarTemplate
+	} else if _, err := strconv.Atoi(value); err == nil {
+		contentType = VarNumber
+	} else if _, err := strconv.ParseFloat(value, 64); err == nil {
+		contentType = VarFloat
+	} else if _, err := strconv.ParseBool(value); err == nil {
+		contentType = VarBool
+	} else if isIdentifier(value) {
+		contentType = VarVariable
+		isReference = true
 	} else {
-		contentType = "unknown"
+		// Unknown token
+		contentType = VarUnknown
 		isReference = false
 	}
 
@@ -70,61 +75,48 @@ func isIdentifier(s string) bool {
 	return true
 }
 
-func getFuncCall(s string) (string, []Node) {
-	// Először a függvény nevét választjuk le a nyitó zárójel előtt
+func getFuncCall(t lexer.LexerToken) (string, []Node) {
 	funcName := ""
-	parenStart := strings.Index(s, "(")
+	parenStart := strings.Index(t.Value, "(")
 	if parenStart != -1 {
-		funcName = s[:parenStart]
+		funcName = t.Value[:parenStart]
 	} else {
-		// Ha nincs nyitó zárójel, akkor nem függvényhívás
 		return "", nil
 	}
 
-	// Argumentumok kinyerése a zárójelek között
-	argsString := s[parenStart+1 : len(s)-1] // Levágjuk a zárójeleket
+	argsString := t.Value[parenStart+1 : len(t.Value)-1]
 
-	// Argumentumok kinyerése és feldolgozása
-	args := parseArguments(argsString)
+	args := parseArguments(argsString, t)
 
 	return funcName, args
 }
 
-// parseArguments feldolgozza a függvényhívás argumentumait
-func parseArguments(argsString string) []Node {
+func parseArguments(argsString string, lt lexer.LexerToken) []Node {
 	var args []Node
-	// Először eltávolítjuk a felesleges szóközöket
 	argsString = strings.TrimSpace(argsString)
 
-	// Ha üres a string, akkor nincs argumentum
 	if len(argsString) == 0 {
 		return args
 	}
 
-	// Az argumentumokat felbontjuk az egyes elemekre
 	argStrings := splitArguments(argsString)
 
-	// Argumentumok Node-okká alakítása
 	for _, arg := range argStrings {
-		// Az argumentumot LexerToken-né alakítjuk
-		t := lexer.LexerToken{Value: arg}
+		t := lexer.LexerToken{Value: arg, Info: lt.Info}
 
-		// A getType segítségével meghatározzuk az értéket, típust és referencia állapotot
 		value, contentType, isReference := getType(t)
 
-		// Az argumentumból Node-ot készítünk
 		args = append(args, Node{
 			IsReference: isReference,
 			Type:        contentType,
 			Value:       value,
-			Children:    nil, // Nincs gyerek elem, ha nem összetett argumentum
+			Info:        getInfo(t),
 		})
 	}
 
 	return args
 }
 
-// splitArguments felbontja az argumentumokat
 func splitArguments(argsString string) []string {
 	var parts []string
 	insideQuotes := false
@@ -134,12 +126,10 @@ func splitArguments(argsString string) []string {
 	for i := 0; i < len(argsString); i++ {
 		char := argsString[i]
 
-		// Kezeljük a stringekben lévő idézőjeleket
 		if char == '"' || char == '\'' {
 			insideQuotes = !insideQuotes
 		}
 
-		// Kezeljük a kocka zárójeleket
 		if char == '[' {
 			insideBrackets = true
 		}
@@ -147,8 +137,6 @@ func splitArguments(argsString string) []string {
 			insideBrackets = false
 		}
 
-		// Ha nem vagyunk idézőjelekben és nem vagyunk kocka zárójelben
-		// és elérünk egy vesszőt, akkor új argumentum kezdődik
 		if char == ',' && !insideQuotes && !insideBrackets {
 			parts = append(parts, currentArg.String())
 			currentArg.Reset()
@@ -157,7 +145,6 @@ func splitArguments(argsString string) []string {
 		}
 	}
 
-	// Ne hagyjuk el az utolsó elemet sem
 	if currentArg.Len() > 0 {
 		parts = append(parts, currentArg.String())
 	}

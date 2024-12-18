@@ -160,7 +160,9 @@ func nextValue(inx, line, pos *int, contentLength int, content string) string {
 				return value
 			}
 
-			value += content[*inx : *inx+templateEnd+len(TemplateEnd.String())]
+			val := content[*inx : *inx+templateEnd+len(TemplateEnd.String())]
+
+			value += val
 			*pos += templateEnd + len(TemplateEnd.String())
 			*inx += templateEnd + len(TemplateEnd.String())
 			continue

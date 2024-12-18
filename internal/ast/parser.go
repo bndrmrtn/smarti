@@ -1,8 +1,6 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/smlgh/smarti/internal/lexer"
 )
 
@@ -33,15 +31,13 @@ func (p *Parser) parse() error {
 		token := p.tokens[inx]
 		inx++
 
-		fmt.Println(token)
-
 		switch token.Type {
 		case lexer.Let, lexer.Const:
 			info := getInfo(token)
 			next := p.tokens[inx]
 			value, typ, ref := getType(next)
 			if err := p.canAssign(token.Value, true); err != nil {
-				return NewErrWithPos(info, err.Error())
+				return NewErrWithPos(info, err)
 			}
 
 			if next.Type != lexer.Assign {
@@ -66,7 +62,7 @@ func (p *Parser) parse() error {
 			value, typ, ref := getType(token)
 			variable := p.tokens[inx-2]
 			if err := p.canAssign(variable.Value, false); err != nil {
-				return NewErrWithPos(info, err.Error())
+				return NewErrWithPos(info, err)
 			}
 			n := Node{
 				IsReference: ref,
@@ -80,12 +76,13 @@ func (p *Parser) parse() error {
 			continue
 		case lexer.FuncCall:
 			info := getInfo(token)
-			fn, args := getFuncCall(token.Value)
+			fn, args := getFuncCall(token)
 			n := Node{
 				Token: token.Type,
 				Name:  fn,
 				Args:  args,
 				Info:  info,
+				Type:  FuncCall,
 			}
 			p.Nodes = append(p.Nodes, n)
 			continue

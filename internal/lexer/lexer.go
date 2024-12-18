@@ -14,7 +14,7 @@ type Lexer struct {
 	pos int
 }
 
-func NewLexer(entry string, files ...string) *Lexer {
+func New(entry string, files ...string) *Lexer {
 	return &Lexer{
 		entryFile:  entry,
 		otherFiles: files,

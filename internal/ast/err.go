@@ -1,19 +1,22 @@
 package ast
 
+import "github.com/fatih/color"
+
 type ErrWithPos struct {
 	Pos NodeFileInfo
 	Err string
 }
 
-func NewErrWithPos(pos NodeFileInfo, err string) ErrWithPos {
+func NewErrWithPos(pos NodeFileInfo, err error) ErrWithPos {
 	return ErrWithPos{
 		Pos: pos,
-		Err: err,
+		Err: err.Error(),
 	}
 }
 
 func (l ErrWithPos) Error() string {
-	return l.Err
+	red := color.New(color.FgRed, color.Bold).SprintFunc()
+	return red("Error: ") + l.Err + " at " + l.Pos.String()
 }
 
 type Err string
@@ -21,6 +24,7 @@ type Err string
 const (
 	ErrorCannotReDeclareVar  Err = "cannot redeclare variable"
 	ErrorCannotReAssignConst Err = "cannot reassign constant"
+	ErrorCannotUseBeforeDecl Err = "cannot use variable before declaration"
 	ErrorInvalidToken        Err = "invalid token"
 	ErrorUnexpectedToken     Err = "unexpected token"
 	ErrorUnexpectedEOF       Err = "unexpected EOF"

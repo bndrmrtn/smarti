@@ -1,16 +1,14 @@
-package runtime
+package packages
 
 import (
 	"fmt"
 	"io"
 	"os"
-
-	"github.com/smlgh/smarti/internal/ast"
 )
 
 type IO struct{}
 
-func (i IO) Run(fn string, args []variable) ([]funcReturn, error) {
+func (i IO) Run(fn string, args []Variable) ([]FuncReturn, error) {
 	switch fn {
 	case "read":
 		return i.fnRead(args)
@@ -26,27 +24,27 @@ func (i IO) Run(fn string, args []variable) ([]funcReturn, error) {
 	return nil, nil
 }
 
-func (IO) fnRead(args []variable) ([]funcReturn, error) {
+func (IO) fnRead(args []Variable) ([]FuncReturn, error) {
 	var text string
 	if len(args) == 0 {
 		fmt.Scan(&text)
 	} else {
-		if args[0].Type == ast.VarString || args[0].Type == ast.VarSingleString {
+		if args[0].Type == VarString || args[0].Type == VarSingleString {
 			fmt.Print(args[0].Value)
 			fmt.Scan(&text)
 		} else {
 			return nil, fmt.Errorf("read expects first argument to be a string")
 		}
 	}
-	return []funcReturn{
+	return []FuncReturn{
 		{
 			Value: text,
-			Type:  ast.VarString,
+			Type:  VarString,
 		},
 	}, nil
 }
 
-func (b IO) fnWrite(args []variable, nl ...bool) ([]funcReturn, error) {
+func (b IO) fnWrite(args []Variable, nl ...bool) ([]FuncReturn, error) {
 	values := make([]interface{}, len(args))
 	for i, arg := range args {
 		values[i] = arg.Value
@@ -59,12 +57,12 @@ func (b IO) fnWrite(args []variable, nl ...bool) ([]funcReturn, error) {
 	return nil, nil
 }
 
-func (b IO) fnWritef(args []variable) ([]funcReturn, error) {
+func (b IO) fnWritef(args []Variable) ([]FuncReturn, error) {
 	var format string
 	values := make([]interface{}, len(args)-1)
 	for i, arg := range args {
 		if i == 0 {
-			if arg.Type == ast.VarString || arg.Type == ast.VarSingleString {
+			if arg.Type == VarString || arg.Type == VarSingleString {
 				format = arg.Value.(string)
 			} else {
 				return nil, fmt.Errorf("writef expects first argument to be a string")
@@ -77,11 +75,11 @@ func (b IO) fnWritef(args []variable) ([]funcReturn, error) {
 	return nil, nil
 }
 
-func (IO) fnReadFile(args []variable) ([]funcReturn, error) {
+func (IO) fnReadFile(args []Variable) ([]FuncReturn, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("readfile expects exactly one argument")
 	}
-	if args[0].Type != ast.VarString {
+	if args[0].Type != VarString {
 		return nil, fmt.Errorf("readfile expects string as argument")
 	}
 
@@ -96,10 +94,10 @@ func (IO) fnReadFile(args []variable) ([]funcReturn, error) {
 		return nil, err
 	}
 
-	return []funcReturn{
+	return []FuncReturn{
 		{
 			Value: string(content),
-			Type:  ast.VarString,
+			Type:  VarString,
 		},
 	}, nil
 }

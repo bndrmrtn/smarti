@@ -1,15 +1,13 @@
 package runtime
 
-type Package interface {
-	Run(fn string, args []variable) ([]funcReturn, error)
-}
+import "github.com/smlgh/smarti/internal/packages"
 
-func NewPackage(name string) Package {
+func NewPackage(name string) packages.Package {
 	switch name {
 	case "io":
-		return IO{}
+		return packages.IO{}
 	case "strs":
-		return Strs{}
+		return packages.Strs{}
 	}
 	return nil
 }

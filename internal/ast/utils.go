@@ -16,6 +16,10 @@ func getInfo(t lexer.LexerToken) NodeFileInfo {
 	}
 }
 
+func Type(s string) (string, NodeType, bool) {
+	return getType(lexer.LexerToken{Value: s})
+}
+
 func getType(t lexer.LexerToken) (string, NodeType, bool) {
 	var contentType NodeType
 	var value string

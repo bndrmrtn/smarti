@@ -1,15 +1,13 @@
-package runtime
+package packages
 
 import (
 	"fmt"
 	"strings"
-
-	"github.com/smlgh/smarti/internal/ast"
 )
 
 type Strs struct{}
 
-func (s Strs) Run(fn string, args []variable) ([]funcReturn, error) {
+func (s Strs) Run(fn string, args []Variable) ([]FuncReturn, error) {
 	switch fn {
 	case "length":
 		return s.fnLength(args)
@@ -19,37 +17,37 @@ func (s Strs) Run(fn string, args []variable) ([]funcReturn, error) {
 	return nil, nil
 }
 
-func (Strs) fnLength(args []variable) ([]funcReturn, error) {
+func (Strs) fnLength(args []Variable) ([]FuncReturn, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("length expects at least one argument")
 	}
 	arg := args[0]
-	if arg.Type != ast.VarString && arg.Type != ast.VarSingleString {
+	if arg.Type != VarString && arg.Type != VarSingleString {
 		return nil, fmt.Errorf("length expects a string argument")
 	}
 
 	l := len(arg.Value.(string))
-	return []funcReturn{
+	return []FuncReturn{
 		{
 			Value: l,
-			Type:  ast.VarNumber,
+			Type:  VarNumber,
 		},
 	}, nil
 }
 
-func (Strs) fnTrim(args []variable) ([]funcReturn, error) {
+func (Strs) fnTrim(args []Variable) ([]FuncReturn, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("trim expects at least one argument")
 	}
 	arg := args[0]
-	if arg.Type != ast.VarString && arg.Type != ast.VarSingleString {
+	if arg.Type != VarString && arg.Type != VarSingleString {
 		return nil, fmt.Errorf("trim expects a string argument")
 	}
 
-	return []funcReturn{
+	return []FuncReturn{
 		{
 			Value: strings.TrimSpace(arg.Value.(string)),
-			Type:  ast.VarString,
+			Type:  VarString,
 		},
 	}, nil
 }

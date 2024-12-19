@@ -1,6 +1,8 @@
 package lexer
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -11,6 +13,8 @@ type Lexer struct {
 
 	entryFile  string
 	otherFiles []string
+
+	hash string
 
 	pos int
 }
@@ -45,6 +49,10 @@ func (l *Lexer) parse(file string) ([]LexerToken, error) {
 		return nil, err
 	}
 
+	hash := md5.New()
+	_, _ = io.Copy(hash, osFile)
+	l.hash = hex.EncodeToString(hash.Sum(nil))
+
 	content := string(b) + "\n"
 	contentLength := len(content)
 	inx, line, pos := 0, 0, 0
@@ -52,16 +60,49 @@ func (l *Lexer) parse(file string) ([]LexerToken, error) {
 
 	for inx < contentLength {
 		char := content[inx]
-		inx++
-		pos++
 
 		// Skip whitespace
 		if char == ' ' || char == '\t' || char == '\n' || char == '\r' {
+			inx++
+			pos++
 			continue
 		}
 
 		// Handle common lexers
 		commonLexers(char, &inx, &pos, &line, contentLength, content)
+
+		inx++
+		pos++
+
+		if char == '<' && inx < contentLength && content[inx] == '>' {
+			startPos := inx - 1
+			inx++ // Skip '>'
+			pos++
+			templateDepth := 1
+
+			for inx < contentLength && templateDepth > 0 {
+				if content[inx] == '<' && inx+1 < contentLength && content[inx+1] == '>' {
+					templateDepth++
+					inx += 2
+					pos += 2
+				} else if content[inx] == '<' && inx+1 < contentLength && content[inx+1] == '/' && inx+2 < contentLength && content[inx+2] == '>' {
+					templateDepth--
+					inx += 3
+					pos += 3
+				} else {
+					inx++
+					pos++
+				}
+			}
+
+			if templateDepth == 0 {
+				templateToken := content[startPos:inx]
+				tokens = append(tokens, newLexerToken(Template, templateToken, file, line, pos))
+				continue
+			}
+
+			return nil, fmt.Errorf("unbalanced template tags at line %d, pos %d", line, pos)
+		}
 
 		// Check for function call patterns: IDENTIFIER + ( ... )
 		if isIdentifierChar(char) {
@@ -137,6 +178,10 @@ func (l *Lexer) parse(file string) ([]LexerToken, error) {
 	}
 
 	return tokens, nil
+}
+
+func (l *Lexer) Sum() string {
+	return l.hash
 }
 
 func isIdentifierChar(c byte) bool {

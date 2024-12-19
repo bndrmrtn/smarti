@@ -8,13 +8,16 @@ import (
 	"sync"
 
 	"github.com/smlgh/smarti/internal/ast"
+	"github.com/smlgh/smarti/internal/packages"
 )
 
 type Runtime struct {
 	nodes []ast.Node
 
-	uses      map[string]Package
+	uses      map[string]packages.Package
 	variables map[string]variable
+
+	with map[string]packages.Package
 
 	mu sync.Mutex
 }
@@ -22,9 +25,16 @@ type Runtime struct {
 func New(nodes []ast.Node) *Runtime {
 	return &Runtime{
 		nodes:     nodes,
-		uses:      make(map[string]Package),
+		uses:      make(map[string]packages.Package),
 		variables: make(map[string]variable),
+		with:      make(map[string]packages.Package),
 	}
+}
+
+func (r *Runtime) With(pkgName string, pkg packages.Package) {
+	r.mu.Lock()
+	r.with[pkgName] = pkg
+	r.mu.Unlock()
 }
 
 func (r *Runtime) Run() error {
@@ -32,6 +42,11 @@ func (r *Runtime) Run() error {
 		switch node.Type {
 		case ast.UsePackage:
 			if _, ok := r.uses[node.Name]; !ok {
+				if _, ok := r.with[node.Name]; ok {
+					r.uses[node.Value] = r.with[node.Name]
+					continue
+				}
+
 				pkg := NewPackage(node.Name)
 				if pkg == nil {
 					return fmt.Errorf("package %s not found", node.Name)
@@ -82,8 +97,6 @@ func (r *Runtime) makeVar(node ast.Node, ret ...bool) (interface{}, error) {
 		}
 		value = v
 		break
-	case ast.VarTemplate:
-		value = node.Value
 	case ast.VarExpression:
 		v, typ, err := r.handleExpression(node)
 		if err != nil {
@@ -105,7 +118,11 @@ func (r *Runtime) makeVar(node ast.Node, ret ...bool) (interface{}, error) {
 		}
 
 		value = v[0].Value
-		node.Type = v[0].Type
+		node.Type = toNodeType(v[0].Type)
+		break
+	case ast.VarTemplate:
+		value = r.parseTemplate(node)
+		node.Type = ast.VarString
 		break
 	}
 
@@ -124,7 +141,7 @@ func (r *Runtime) makeVar(node ast.Node, ret ...bool) (interface{}, error) {
 	return nil, nil
 }
 
-func (r *Runtime) callFn(node ast.Node) ([]funcReturn, error) {
+func (r *Runtime) callFn(node ast.Node) ([]packages.FuncReturn, error) {
 	v, err := r.getArgs(node.Args)
 	if err != nil {
 		return nil, err
@@ -136,10 +153,10 @@ func (r *Runtime) callFn(node ast.Node) ([]funcReturn, error) {
 		if !ok {
 			return nil, fmt.Errorf("package %s not imported", parts[0])
 		}
-		return pkg.Run(parts[1], v)
+		return pkg.Run(parts[1], toPkgVar(v))
 	}
 
-	return builtin.runFn(node.Name, v)
+	return builtin.runFn(node.Name, toPkgVar(v))
 }
 
 func (r *Runtime) getArgs(nodes []ast.Node) ([]variable, error) {
@@ -199,7 +216,7 @@ func (r *Runtime) handleExpression(node ast.Node) (interface{}, ast.NodeType, er
 				return nil, ast.VarNil, nil
 			}
 			result = v[0].Value
-			typ = v[0].Type
+			typ = toNodeType(v[0].Type)
 			break
 		default:
 			result = nil
@@ -209,4 +226,33 @@ func (r *Runtime) handleExpression(node ast.Node) (interface{}, ast.NodeType, er
 	}
 
 	return result, typ, nil
+}
+
+func (r *Runtime) parseTemplate(node ast.Node) string {
+	tmpl := parseTemplate(node.Value)
+	fmt.Println(node.Value, tmpl)
+
+	var tpl string
+
+	for _, part := range tmpl {
+		if part.Static {
+			tpl += part.Content
+			continue
+		}
+
+		val, typ, ref := ast.Type(part.Content)
+
+		v, err := r.makeVar(ast.Node{
+			Type:        typ,
+			Value:       val,
+			IsReference: ref,
+		}, true)
+		if err != nil {
+			return ""
+		}
+
+		tpl += fmt.Sprintf("%v", v)
+	}
+
+	return tpl
 }

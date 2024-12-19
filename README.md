@@ -43,9 +43,13 @@ writef("Hello, %s!\n", name);
 ### Our Goal
 
 ```smarti
-use api; // Import the api module to use data from the request;
+use request; // import the request module to get request data
+use response as rw; // import the response module to send data to the client  (rw is an alias for response writer)
 
-api.statusCode(200); // Set the status code to 200;
+if request.method != "POST" {
+  rw.status(405); // Set the status code to 405 and send the response
+  return;
+}
 
 for let i = 0; i < api.data.length; i++ {
   let data = api.data[i];
@@ -54,6 +58,8 @@ for let i = 0; i < api.data.length; i++ {
     <p>{{ data.content }}</p>
   </>);
 }
+
+wr.status(200); // Set the status code to 200 and send the response
 ```
 
 This code is our goal. We want to make a simple template language that can be used in any project.

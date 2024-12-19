@@ -60,6 +60,7 @@ const (
 	TemplateStart
 	// TemplateEnd marks the end of an HTML block: </template>
 	TemplateEnd
+	Template
 
 	// Export exports a variable
 	Export Token = iota + 100
@@ -82,8 +83,14 @@ const (
 	// Identifier is an identifier
 	Identifier
 
+	Addition = iota + 1000
+	Subtraction
+	Multiplication
+	Division
+	Modulo
+
 	// Unknown is an unknown token
-	Unknown = iota + 1000
+	Unknown = iota + 10000
 )
 
 func (t Token) String() string {
@@ -147,6 +154,16 @@ func isToken(s string) Token {
 		return Const
 	case "=":
 		return Assign
+	case "+":
+		return Addition
+	case "-":
+		return Subtraction
+	case "*":
+		return Multiplication
+	case "/":
+		return Division
+	case "%":
+		return Modulo
 	case "nil":
 		return Nil
 	case ";":
@@ -166,6 +183,6 @@ func isToken(s string) Token {
 	case "</>":
 		return TemplateEnd
 	default:
-		return Unknown
+		return Identifier
 	}
 }

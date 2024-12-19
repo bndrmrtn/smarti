@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"errors"
+
 	"github.com/smlgh/smarti/internal/lexer"
 )
 
@@ -33,59 +35,87 @@ func (p *Parser) parse() error {
 
 		switch token.Type {
 		case lexer.Let, lexer.Const:
-			info := getInfo(token)
-			next := p.tokens[inx]
-			value, typ, ref := getType(next)
-			if err := p.canAssign(token.Value, true); err != nil {
-				return NewErrWithPos(info, err)
+			name := p.tokens[inx].Value
+			value := []lexer.LexerToken{}
+			inx++
+			if inx < tokenLen && p.tokens[inx].Type == lexer.Assign {
+				inx++
+				for inx < tokenLen && p.tokens[inx].Type != lexer.SemiColon {
+					value = append(value, p.tokens[inx])
+					inx++
+				}
+			} else {
+				value = append(value, lexer.LexerToken{
+					Type:  lexer.Nil,
+					Value: "nil",
+				})
 			}
 
-			if next.Type != lexer.Assign {
-				value = "nil"
-				typ = "nil"
-			} else {
-				inx++
+			if err := p.canAssign(name, true); err != nil {
+				return err
 			}
 
 			n := Node{
-				IsReference: ref,
-				Token:       token.Type,
-				Name:        token.Value,
-				Value:       value,
-				Type:        typ,
-				Info:        info,
+				Token: token.Type,
+				Name:  name,
 			}
+
+			bindValue(value, &n)
+
 			p.Nodes = append(p.Nodes, n)
 			continue
 		case lexer.Assign:
-			info := getInfo(token)
-			value, typ, ref := getType(token)
-			variable := p.tokens[inx-2]
-			if err := p.canAssign(variable.Value, false); err != nil {
-				return NewErrWithPos(info, err)
+			if inx-2 < 0 {
+				return errors.New("syntax error: missing variable name")
 			}
+			name := p.tokens[inx-2].Value
+			value := []lexer.LexerToken{}
+
+			for inx < tokenLen && p.tokens[inx].Type != lexer.SemiColon {
+				value = append(value, p.tokens[inx])
+				inx++
+			}
+
+			if err := p.canAssign(name, false); err != nil {
+				return err
+			}
+
 			n := Node{
-				IsReference: ref,
-				Token:       token.Type,
-				Name:        variable.Value,
-				Value:       value,
-				Type:        typ,
-				Info:        info,
+				Token: lexer.Assign,
+				Name:  name,
 			}
+
+			bindValue(value, &n)
+
 			p.Nodes = append(p.Nodes, n)
 			continue
 		case lexer.FuncCall:
-			info := getInfo(token)
-			fn, args := getFuncCall(token)
-			n := Node{
-				Token: token.Type,
-				Name:  fn,
-				Args:  args,
-				Info:  info,
+			name, args := getFuncCall(token)
+			p.Nodes = append(p.Nodes, Node{
+				Token: lexer.FuncCall,
 				Type:  FuncCall,
+				Name:  name,
+				Args:  args,
+				Info:  getInfo(token),
+			})
+		case lexer.Use:
+			pkg := p.tokens[inx].Value
+			as := pkg
+			if inx+3 < tokenLen && p.tokens[inx+1].Value == "as" {
+				inx += 2
+				as = p.tokens[inx].Value
+				if p.tokens[inx+1].Type != lexer.SemiColon {
+					return errors.New("syntax error: missing semicolon")
+				}
+			} else if inx+1 < tokenLen && p.tokens[inx+1].Type != lexer.SemiColon {
+				return errors.New("syntax error: missing semicolon")
 			}
-			p.Nodes = append(p.Nodes, n)
-			continue
+			p.Nodes = append(p.Nodes, Node{
+				Token: lexer.Use,
+				Type:  UsePackage,
+				Name:  pkg,
+				Value: as,
+			})
 		}
 	}
 
@@ -104,4 +134,57 @@ func (p *Parser) canAssign(name string, create bool) error {
 	}
 
 	return nil
+}
+
+func bindValue(value []lexer.LexerToken, n *Node) {
+	if len(value) == 0 {
+		n.Value = "nil"
+		n.Type = VarNil
+		return
+	}
+
+	if len(value) == 1 {
+		if value[0].Type == lexer.FuncCall {
+			name, args := getFuncCall(value[0])
+			n.Children = append(n.Children, Node{
+				Type: FuncCall,
+				Name: name,
+				Args: args,
+			})
+			n.Type = VarExpression
+			return
+		}
+
+		val, typ, ref := getType(value[0])
+		n.Value = val
+		n.Type = typ
+		n.IsReference = ref
+		return
+	}
+
+	n.Type = VarExpression
+	inx := 0
+	for inx < len(value) {
+		v := value[inx]
+		inx++
+
+		if v.Type == lexer.FuncCall {
+			name, args := getFuncCall(v)
+			n.Children = append(n.Children, Node{
+				Type: FuncCall,
+				Name: name,
+				Args: args,
+				Info: getInfo(v),
+			})
+			continue
+		}
+
+		val, typ, ref := getType(v)
+		n.Children = append(n.Children, Node{
+			Value:       val,
+			Type:        typ,
+			IsReference: ref,
+			Info:        getInfo(v),
+		})
+	}
 }

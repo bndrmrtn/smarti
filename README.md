@@ -16,7 +16,7 @@ It helps you to make html templates with a simple syntax without learning each t
 ## Installation
 
 ```bash
-go get github.com/smlgh/smarti@latest
+go install github.com/smlgh/smarti@latest
 ```
 
 ## Usage
@@ -28,6 +28,19 @@ smarti server # To start the server on port 8080 where you can pass data to the 
 ```
 
 ## Demo
+
+### Simple code example
+
+```smarti
+use io;
+
+let name = io.read("What is your name? ");
+name = capitalize(name);
+
+writef("Hello, %s!\n", name);
+```
+
+### Our Goal
 
 ```smarti
 use api; // Import the api module to use data from the request;
@@ -45,3 +58,24 @@ for let i = 0; i < api.data.length; i++ {
 
 This code is our goal. We want to make a simple template language that can be used in any project.
 We're working on it. We're trying to make it as good as possible.
+
+## Error handling
+
+Smarti does not have try-catch blocks.
+If you want to handle errors, you can use a special macro called `@err`.
+Err macro creates a temporary variable called `err` that contains the error message.
+
+```smarti
+use json;
+
+let data = json.from('{"name": "John"}') @err;
+if err != nil {
+  writef("Error: %v\n", err);
+  return;
+}
+```
+
+You can use the `@err` macro anywhere in the code.
+Errors can be omitted if you don't want to handle them.
+In this case non-fatal operations can return non-initialized values.
+This feature is still in development.

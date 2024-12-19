@@ -1,8 +1,6 @@
 package main
 
-import (
-	"github.com/smlgh/smarti/cmd"
-)
+import "github.com/smlgh/smarti/cmd"
 
 func main() {
 	cmd.Execute()

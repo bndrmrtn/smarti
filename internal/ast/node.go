@@ -13,6 +13,7 @@ type Node struct {
 	Value       string      `json:"value" yaml:"value"`
 	Args        []Node      `json:"args,omitempty" yaml:"args,omitempty"`
 	Children    []Node      `json:"children,omitempty" yaml:"children,omitempty"`
+	Scope       NodeScope   `json:"scope,omitempty" yaml:"scope,omitempty"`
 
 	Info NodeFileInfo `json:"info,omitempty" yaml:"info,omitempty"`
 }
@@ -28,3 +29,12 @@ func (n NodeFileInfo) String() string {
 
 	return blue(n.File) + ":" + blue(n.Line) + ":" + blue(n.Pos)
 }
+
+type NodeScope string
+
+const (
+	ScopeGlobal NodeScope = "global"
+	ScopeLocal  NodeScope = "local"
+	ScopeBlock  NodeScope = "block"
+	ScopeFunc   NodeScope = "func"
+)

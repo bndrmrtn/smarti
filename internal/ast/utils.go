@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -48,10 +49,11 @@ func getType(t lexer.LexerToken) (string, NodeType, bool) {
 	} else if isIdentifier(value) {
 		contentType = VarVariable
 		isReference = true
+	} else if isOperator(value) {
+		contentType = VarOperator
 	} else {
 		// Unknown token
 		contentType = VarUnknown
-		isReference = false
 	}
 
 	return value, contentType, isReference
@@ -68,11 +70,15 @@ func handleEscapedString(s string) string {
 func isIdentifier(s string) bool {
 	for i := 0; i < len(s); i++ {
 		char := s[i]
-		if !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char == '_') || (char >= '0' && char <= '9')) {
+		if !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char == '_') || (char >= '0' && char <= '9')) || char == '.' {
 			return false
 		}
 	}
 	return true
+}
+
+func isOperator(s string) bool {
+	return s == "+" || s == "-" || s == "*" || s == "/" || s == "%" || s == "==" || s == "!=" || s == ">" || s == "<" || s == ">=" || s == "<=" || s == "&&" || s == "||" || s == "!" || s == "="
 }
 
 func getFuncCall(t lexer.LexerToken) (string, []Node) {
@@ -87,6 +93,15 @@ func getFuncCall(t lexer.LexerToken) (string, []Node) {
 	argsString := t.Value[parenStart+1 : len(t.Value)-1]
 
 	args := parseArguments(argsString, t)
+
+	for i := range args {
+		if isFunctionCall(args[i].Value) {
+			name, newArgs := getFuncCall(lexer.LexerToken{Value: args[i].Value, Info: t.Info})
+			args[i].Name = name
+			args[i].Args = newArgs
+			args[i].Type = FuncCall
+		}
+	}
 
 	return funcName, args
 }
@@ -121,6 +136,7 @@ func splitArguments(argsString string) []string {
 	var parts []string
 	insideQuotes := false
 	insideBrackets := false
+	insideBraces := false
 	var currentArg strings.Builder
 
 	for i := 0; i < len(argsString); i++ {
@@ -137,7 +153,19 @@ func splitArguments(argsString string) []string {
 			insideBrackets = false
 		}
 
-		if char == ',' && !insideQuotes && !insideBrackets {
+		if char == '(' {
+			insideBraces = true
+		}
+
+		if char == ')' {
+			insideBraces = false
+		}
+
+		if (char == ' ' || char == '\t') && i < len(argsString) && !insideQuotes {
+			continue
+		}
+
+		if char == ',' && !insideQuotes && !insideBrackets && !insideBraces {
 			parts = append(parts, currentArg.String())
 			currentArg.Reset()
 		} else {
@@ -150,4 +178,9 @@ func splitArguments(argsString string) []string {
 	}
 
 	return parts
+}
+
+func isFunctionCall(input string) bool {
+	re := regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*\s*\(([^()]|".*?"|\s|,)*\)$`)
+	return re.MatchString(input)
 }

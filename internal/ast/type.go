@@ -15,4 +15,9 @@ const (
 	VarUnknown NodeType = "#unknown#"
 
 	FuncCall NodeType = "func_call"
+
+	VarExpression NodeType = "expression"
+	VarOperator   NodeType = "operator"
+
+	UsePackage NodeType = "use_package"
 )

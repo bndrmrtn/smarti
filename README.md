@@ -16,7 +16,7 @@ It helps you to make html templates with a simple syntax without learning each t
 ## Installation
 
 ```bash
-go install github.com/smlgh/smarti@latest
+go install github.com/bndrmrtn/smarti@latest
 ```
 
 ## Usage

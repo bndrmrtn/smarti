@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/smlgh/smarti/internal/ast"
-	"github.com/smlgh/smarti/internal/packages"
+	"github.com/bndrmrtn/smarti/internal/ast"
+	"github.com/bndrmrtn/smarti/internal/packages"
 )
 
 type runtimeBuiltin struct{}

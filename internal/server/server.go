@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/smlgh/smarti/internal/ast"
-	"github.com/smlgh/smarti/internal/lexer"
-	"github.com/smlgh/smarti/internal/packages"
-	"github.com/smlgh/smarti/internal/runtime"
+	"github.com/bndrmrtn/smarti/internal/ast"
+	"github.com/bndrmrtn/smarti/internal/lexer"
+	"github.com/bndrmrtn/smarti/internal/packages"
+	"github.com/bndrmrtn/smarti/internal/runtime"
 )
 
 type Server struct {

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/smlgh/smarti/internal/lexer"
+	"github.com/bndrmrtn/smarti/internal/lexer"
 )
 
 func getInfo(t lexer.LexerToken) NodeFileInfo {

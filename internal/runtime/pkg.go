@@ -1,6 +1,6 @@
 package runtime
 
-import "github.com/smlgh/smarti/internal/packages"
+import "github.com/bndrmrtn/smarti/internal/packages"
 
 func NewPackage(name string) packages.Package {
 	switch name {

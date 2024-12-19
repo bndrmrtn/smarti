@@ -3,9 +3,9 @@ package cmd
 import (
 	"os"
 
-	"github.com/smlgh/smarti/internal/ast"
-	"github.com/smlgh/smarti/internal/lexer"
-	"github.com/smlgh/smarti/internal/runtime"
+	"github.com/bndrmrtn/smarti/internal/ast"
+	"github.com/bndrmrtn/smarti/internal/lexer"
+	"github.com/bndrmrtn/smarti/internal/runtime"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )

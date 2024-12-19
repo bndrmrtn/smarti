@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/smlgh/smarti/internal/lexer"
+	"github.com/bndrmrtn/smarti/internal/lexer"
 )
 
 func Test_FnCall(t *testing.T) {

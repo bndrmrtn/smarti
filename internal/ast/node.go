@@ -1,8 +1,8 @@
 package ast
 
 import (
+	"github.com/bndrmrtn/smarti/internal/lexer"
 	"github.com/fatih/color"
-	"github.com/smlgh/smarti/internal/lexer"
 )
 
 type Node struct {

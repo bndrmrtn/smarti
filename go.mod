@@ -1,4 +1,4 @@
-module github.com/smlgh/smarti
+module github.com/bndrmrtn/smarti
 
 go 1.22.7
 

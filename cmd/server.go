@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/smlgh/smarti/internal/server"
+	"github.com/bndrmrtn/smarti/internal/server"
 	"github.com/spf13/cobra"
 )
 

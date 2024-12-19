@@ -3,7 +3,7 @@ package ast
 import (
 	"errors"
 
-	"github.com/smlgh/smarti/internal/lexer"
+	"github.com/bndrmrtn/smarti/internal/lexer"
 )
 
 type Parser struct {

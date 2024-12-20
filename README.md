@@ -24,7 +24,7 @@ go install github.com/bndrmrtn/smarti@latest
 ```bash
 smarti run main.smt
 # Or
-smarti server # To start the server on port 8080 where you can pass data to the template language.
+smarti server . # To start the server on port 3000 in the specified directory.
 ```
 
 ## Demo

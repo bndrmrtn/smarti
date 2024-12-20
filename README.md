@@ -73,10 +73,11 @@ Err macro creates a temporary variable called `err` that contains the error mess
 
 ```smarti
 use json;
+use io;
 
 let data = json.from('{"name": "John"}') @err;
 if err != nil {
-  writef("Error: %v\n", err);
+  io.writef("Error: %v\n", err);
   return;
 }
 ```

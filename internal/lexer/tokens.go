@@ -29,8 +29,9 @@ func newLexerToken(t Token, v string, file string, line, pos int) LexerToken {
 type Token int
 
 const (
+	Namespace Token = iota
 	// Use imports a package
-	Use Token = iota
+	Use
 
 	// Let creates a new variable
 	Let
@@ -154,6 +155,8 @@ func (t Token) String() string {
 
 func isToken(s string) Token {
 	switch s {
+	case "namespace":
+		return Namespace
 	case "use":
 		return Use
 	case "let":

@@ -12,11 +12,11 @@ type variable struct {
 	Scope ast.NodeScope
 }
 
-func (r *Runtime) toPkgVar(v []variable) []packages.Variable {
-	var vars []packages.Variable
+func toPkgVar(v []*variable) []*packages.Variable {
+	var vars []*packages.Variable
 
 	for _, vv := range v {
-		vars = append(vars, packages.Variable{
+		vars = append(vars, &packages.Variable{
 			Type:  packages.VarType(vv.Type),
 			Value: vv.Value,
 		})

@@ -8,7 +8,7 @@ import (
 
 type IO struct{}
 
-func (i IO) Run(fn string, args []Variable) ([]FuncReturn, error) {
+func (i IO) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 	switch fn {
 	case "read":
 		return i.fnRead(args)
@@ -24,7 +24,7 @@ func (i IO) Run(fn string, args []Variable) ([]FuncReturn, error) {
 	return nil, nil
 }
 
-func (IO) fnRead(args []Variable) ([]FuncReturn, error) {
+func (IO) fnRead(args []*Variable) ([]*FuncReturn, error) {
 	var text string
 	if len(args) == 0 {
 		fmt.Scan(&text)
@@ -36,7 +36,7 @@ func (IO) fnRead(args []Variable) ([]FuncReturn, error) {
 			return nil, fmt.Errorf("read expects first argument to be a string")
 		}
 	}
-	return []FuncReturn{
+	return []*FuncReturn{
 		{
 			Value: text,
 			Type:  VarString,
@@ -44,7 +44,7 @@ func (IO) fnRead(args []Variable) ([]FuncReturn, error) {
 	}, nil
 }
 
-func (b IO) fnWrite(args []Variable, nl ...bool) ([]FuncReturn, error) {
+func (b IO) fnWrite(args []*Variable, nl ...bool) ([]*FuncReturn, error) {
 	values := make([]interface{}, len(args))
 	for i, arg := range args {
 		values[i] = arg.Value
@@ -57,7 +57,7 @@ func (b IO) fnWrite(args []Variable, nl ...bool) ([]FuncReturn, error) {
 	return nil, nil
 }
 
-func (b IO) fnWritef(args []Variable) ([]FuncReturn, error) {
+func (b IO) fnWritef(args []*Variable) ([]*FuncReturn, error) {
 	var format string
 	values := make([]interface{}, len(args)-1)
 	for i, arg := range args {
@@ -75,7 +75,7 @@ func (b IO) fnWritef(args []Variable) ([]FuncReturn, error) {
 	return nil, nil
 }
 
-func (IO) fnReadFile(args []Variable) ([]FuncReturn, error) {
+func (IO) fnReadFile(args []*Variable) ([]*FuncReturn, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("readfile expects exactly one argument")
 	}
@@ -94,7 +94,7 @@ func (IO) fnReadFile(args []Variable) ([]FuncReturn, error) {
 		return nil, err
 	}
 
-	return []FuncReturn{
+	return []*FuncReturn{
 		{
 			Value: string(content),
 			Type:  VarString,

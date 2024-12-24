@@ -1,1 +1,2 @@
-return "other content";
+let content = "other content";
+return content;

@@ -107,6 +107,17 @@ func (p *Parser) parse() error {
 				Name:  pkg,
 				Value: as,
 			})
+		case lexer.Namespace:
+			name := p.tokens[inx].Value
+			inx++
+			if inx < tokenLen && p.tokens[inx].Type != lexer.SemiColon {
+				return errors.New("syntax error: missing semicolon")
+			}
+			p.Nodes = append(p.Nodes, Node{
+				Token: lexer.Namespace,
+				Type:  Namespace,
+				Name:  name,
+			})
 		case lexer.Func:
 			name, args := getFuncCall(p.tokens[inx])
 			inx++

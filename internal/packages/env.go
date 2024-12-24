@@ -7,7 +7,7 @@ import (
 
 type Env struct{}
 
-func (e Env) Run(fn string, args []Variable) ([]FuncReturn, error) {
+func (e Env) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 	switch fn {
 	case "get":
 		return e.fnGet(args)
@@ -17,7 +17,7 @@ func (e Env) Run(fn string, args []Variable) ([]FuncReturn, error) {
 	return nil, nil
 }
 
-func (Env) fnGet(args []Variable) ([]FuncReturn, error) {
+func (Env) fnGet(args []*Variable) ([]*FuncReturn, error) {
 	if len(args) != 1 {
 		return nil, errors.New("get method only allows one argument")
 	}
@@ -26,7 +26,7 @@ func (Env) fnGet(args []Variable) ([]FuncReturn, error) {
 		return nil, errors.New("get method only allows string arguments")
 	}
 
-	return []FuncReturn{
+	return []*FuncReturn{
 		{
 			Type:  "string",
 			Value: os.Getenv(args[0].Value.(string)),
@@ -34,7 +34,7 @@ func (Env) fnGet(args []Variable) ([]FuncReturn, error) {
 	}, nil
 }
 
-func (Env) fnSet(args []Variable) ([]FuncReturn, error) {
+func (Env) fnSet(args []*Variable) ([]*FuncReturn, error) {
 	if len(args) != 2 {
 		return nil, errors.New("set method only allows two argument")
 	}

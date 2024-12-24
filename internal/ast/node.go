@@ -10,7 +10,7 @@ type Node struct {
 	Token       lexer.Token `json:"token" yaml:"token"`
 	Name        string      `json:"name,omitempty" yaml:"name,omitempty"`
 	Type        NodeType    `json:"type" yaml:"type"`
-	Value       string      `json:"value" yaml:"value"`
+	Value       string      `json:"value,omitempty" yaml:"value,omitempty"`
 	Args        []Node      `json:"args,omitempty" yaml:"args,omitempty"`
 	Children    []Node      `json:"children,omitempty" yaml:"children,omitempty"`
 	Scope       NodeScope   `json:"scope,omitempty" yaml:"scope,omitempty"`

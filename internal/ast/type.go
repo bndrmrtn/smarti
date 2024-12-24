@@ -22,6 +22,7 @@ const (
 	VarOperator   NodeType = "operator"
 
 	UsePackage NodeType = "use_package"
+	Namespace  NodeType = "namespace"
 
 	ForLoop NodeType = "for_loop"
 )

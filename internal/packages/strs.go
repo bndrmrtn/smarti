@@ -7,7 +7,7 @@ import (
 
 type Strs struct{}
 
-func (s Strs) Run(fn string, args []Variable) ([]FuncReturn, error) {
+func (s Strs) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 	switch fn {
 	case "length":
 		return s.fnLength(args)
@@ -17,7 +17,7 @@ func (s Strs) Run(fn string, args []Variable) ([]FuncReturn, error) {
 	return nil, nil
 }
 
-func (Strs) fnLength(args []Variable) ([]FuncReturn, error) {
+func (Strs) fnLength(args []*Variable) ([]*FuncReturn, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("length expects at least one argument")
 	}
@@ -27,7 +27,7 @@ func (Strs) fnLength(args []Variable) ([]FuncReturn, error) {
 	}
 
 	l := len(arg.Value.(string))
-	return []FuncReturn{
+	return []*FuncReturn{
 		{
 			Value: l,
 			Type:  VarNumber,
@@ -35,7 +35,7 @@ func (Strs) fnLength(args []Variable) ([]FuncReturn, error) {
 	}, nil
 }
 
-func (Strs) fnTrim(args []Variable) ([]FuncReturn, error) {
+func (Strs) fnTrim(args []*Variable) ([]*FuncReturn, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("trim expects at least one argument")
 	}
@@ -44,7 +44,7 @@ func (Strs) fnTrim(args []Variable) ([]FuncReturn, error) {
 		return nil, fmt.Errorf("trim expects a string argument")
 	}
 
-	return []FuncReturn{
+	return []*FuncReturn{
 		{
 			Value: strings.TrimSpace(arg.Value.(string)),
 			Type:  VarString,

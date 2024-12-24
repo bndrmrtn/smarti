@@ -7,7 +7,7 @@ import (
 
 type Numbers struct{}
 
-func (r Numbers) Run(fn string, args []Variable) ([]FuncReturn, error) {
+func (r Numbers) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 	switch fn {
 	case "from":
 		return r.fnFrom(args)
@@ -15,7 +15,7 @@ func (r Numbers) Run(fn string, args []Variable) ([]FuncReturn, error) {
 	return nil, nil
 }
 
-func (Numbers) fnFrom(args []Variable) ([]FuncReturn, error) {
+func (Numbers) fnFrom(args []*Variable) ([]*FuncReturn, error) {
 	if len(args) != 1 {
 		return nil, errors.New("from expects one argument")
 	}
@@ -27,21 +27,21 @@ func (Numbers) fnFrom(args []Variable) ([]FuncReturn, error) {
 			return nil, err
 		}
 
-		return []FuncReturn{
+		return []*FuncReturn{
 			{
 				Value: val,
 				Type:  VarNumber,
 			},
 		}, nil
 	case VarNumber:
-		return []FuncReturn{
+		return []*FuncReturn{
 			{
 				Value: args[0].Value,
 				Type:  VarNumber,
 			},
 		}, nil
 	case VarFloat:
-		return []FuncReturn{
+		return []*FuncReturn{
 			{
 				Value: int(args[0].Value.(float64)),
 				Type:  VarNumber,

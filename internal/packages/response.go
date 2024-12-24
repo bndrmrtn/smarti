@@ -15,7 +15,7 @@ func NewResponse(rw http.ResponseWriter) *Response {
 	}
 }
 
-func (r *Response) Run(fn string, args []Variable) ([]FuncReturn, error) {
+func (r *Response) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 	switch fn {
 	case "write":
 		return r.fnWrite(args)
@@ -27,7 +27,7 @@ func (r *Response) Run(fn string, args []Variable) ([]FuncReturn, error) {
 	return nil, nil
 }
 
-func (r *Response) fnWrite(args []Variable) ([]FuncReturn, error) {
+func (r *Response) fnWrite(args []*Variable) ([]*FuncReturn, error) {
 	if len(args) != 1 {
 		return nil, errors.New("write method only accepts one argument")
 	}
@@ -40,7 +40,7 @@ func (r *Response) fnWrite(args []Variable) ([]FuncReturn, error) {
 	return nil, errors.New("write method only accepts string argument")
 }
 
-func (r *Response) fnHeader(args []Variable) ([]FuncReturn, error) {
+func (r *Response) fnHeader(args []*Variable) ([]*FuncReturn, error) {
 	if len(args) != 2 {
 		return nil, errors.New("header method accepts 2 arguments, key and value")
 	}
@@ -54,7 +54,7 @@ func (r *Response) fnHeader(args []Variable) ([]FuncReturn, error) {
 	return nil, errors.New("header method only accepts string arguments")
 }
 
-func (r *Response) fnStatus(args []Variable) ([]FuncReturn, error) {
+func (r *Response) fnStatus(args []*Variable) ([]*FuncReturn, error) {
 	if len(args) != 2 {
 		return nil, errors.New("status method accepts 1 arguments")
 	}

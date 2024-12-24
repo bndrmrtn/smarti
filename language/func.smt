@@ -1,6 +1,7 @@
+namespace main;
 use io;
 use numbers;
 
-let content = import("language/get.smt");
-
-io.writeln(content);
+let otherfile = "";
+otherfile = import("language/get.smt");
+io.writeln(otherfile);

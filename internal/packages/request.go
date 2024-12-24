@@ -15,7 +15,7 @@ func NewRequest(r *http.Request) *Request {
 	}
 }
 
-func (r *Request) Run(fn string, args []Variable) ([]FuncReturn, error) {
+func (r *Request) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 	switch fn {
 	case "method":
 		return r.fnMethod(args)
@@ -23,12 +23,12 @@ func (r *Request) Run(fn string, args []Variable) ([]FuncReturn, error) {
 	return nil, nil
 }
 
-func (r *Request) fnMethod(args []Variable) ([]FuncReturn, error) {
+func (r *Request) fnMethod(args []*Variable) ([]*FuncReturn, error) {
 	if len(args) != 0 {
 		return nil, errors.New("method does not accept any argument")
 	}
 
-	return []FuncReturn{
+	return []*FuncReturn{
 		{
 			Value: r.r.Method,
 			Type:  VarString,

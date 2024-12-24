@@ -173,6 +173,16 @@ func (l *Lexer) parse(file string) ([]LexerToken, error) {
 			continue
 		}
 
+		if char == '{' {
+			tokens = append(tokens, newLexerToken(CurlyBraceStart, "{", file, line, pos))
+			continue
+		}
+
+		if char == '}' {
+			tokens = append(tokens, newLexerToken(CurlyBraceEnd, "}", file, line, pos))
+			continue
+		}
+
 		// Handle other tokens like operators or unknowns
 		tokens = append(tokens, newLexerToken(Unknown, string(char), file, line, pos))
 	}

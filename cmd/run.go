@@ -55,8 +55,8 @@ func execRun(cmd *cobra.Command, args []string) {
 	}
 
 	// Interpret the nodes with runtime
-	runt := runtime.New(parser.Nodes)
-	if err := runt.Run(); err != nil {
+	runt := runtime.New()
+	if err := runt.Run(parser.Nodes); err != nil {
 		cmd.PrintErr(err)
 		return
 	}

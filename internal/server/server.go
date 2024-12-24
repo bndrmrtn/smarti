@@ -72,12 +72,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) execute(nodes []ast.Node, w http.ResponseWriter, r *http.Request) {
-	runt := runtime.New(nodes)
+	runt := runtime.New()
 
 	runt.With("response", packages.NewResponse(w))
 	runt.With("request", packages.NewRequest(r))
 
-	if err := runt.Run(); err != nil {
+	if err := runt.Run(nodes); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

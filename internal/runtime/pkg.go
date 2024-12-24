@@ -8,6 +8,10 @@ func NewPackage(name string) packages.Package {
 		return packages.IO{}
 	case "strs":
 		return packages.Strs{}
+	case "numbers":
+		return packages.Numbers{}
+	case "env":
+		return packages.Env{}
 	}
 	return nil
 }

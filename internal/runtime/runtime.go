@@ -12,23 +12,27 @@ import (
 )
 
 type Runtime struct {
-	nodes []ast.Node
-
 	uses      map[string]packages.Package
 	variables map[string]variable
+
+	funcs map[string]funcDecl
 
 	with map[string]packages.Package
 
 	mu sync.Mutex
 }
 
-func New(nodes []ast.Node) *Runtime {
-	return &Runtime{
-		nodes:     nodes,
+var builtin runtimeBuiltin
+
+func New() *Runtime {
+	r := &Runtime{
 		uses:      make(map[string]packages.Package),
 		variables: make(map[string]variable),
+		funcs:     make(map[string]funcDecl),
 		with:      make(map[string]packages.Package),
 	}
+	builtin = runtimeBuiltin{r: r}
+	return r
 }
 
 func (r *Runtime) With(pkgName string, pkg packages.Package) {
@@ -37,8 +41,37 @@ func (r *Runtime) With(pkgName string, pkg packages.Package) {
 	r.mu.Unlock()
 }
 
-func (r *Runtime) Run() error {
-	for _, node := range r.nodes {
+func (r *Runtime) Run(nodes []ast.Node) error {
+	if _, err := r.Execute(nodes); err != nil {
+		return err
+	}
+
+	main, ok := r.funcs["main"]
+	if !ok {
+		return nil
+	}
+
+	_, err := r.Execute(main.Body)
+	return err
+}
+
+func (r *Runtime) Execute(nodes []ast.Node) ([]packages.FuncReturn, error) {
+	var scoped []ast.Node
+
+	defer func() {
+		for _, node := range scoped {
+			switch node.Type {
+			case ast.VarExpression, ast.VarNil, ast.VarString, ast.VarSingleString, ast.VarNumber, ast.VarFloat, ast.VarBool, ast.VarTemplate, ast.VarVariable, ast.VarUnknown:
+				delete(r.variables, node.Name)
+			}
+		}
+	}()
+
+	for _, node := range nodes {
+		if node.Scope != ast.ScopeGlobal {
+			scoped = append(scoped, node)
+		}
+
 		switch node.Type {
 		case ast.UsePackage:
 			if _, ok := r.uses[node.Name]; !ok {
@@ -49,23 +82,31 @@ func (r *Runtime) Run() error {
 
 				pkg := NewPackage(node.Name)
 				if pkg == nil {
-					return fmt.Errorf("package %s not found", node.Name)
+					return nil, fmt.Errorf("package %s not found", node.Name)
 				}
 				r.uses[node.Value] = pkg
 			}
 		case ast.VarExpression, ast.VarNil, ast.VarString, ast.VarSingleString, ast.VarNumber, ast.VarFloat, ast.VarBool, ast.VarTemplate, ast.VarVariable, ast.VarUnknown:
 			if _, err := r.makeVar(node); err != nil {
-				return err
+				return nil, err
 			}
 			break
 		case ast.FuncCall:
 			if _, err := r.callFn(node); err != nil {
-				return err
+				return nil, err
 			}
 			break
+		case ast.FuncDecl:
+			r.funcs[node.Name] = funcDecl{
+				Args: node.Args,
+				Body: node.Children,
+			}
+		case ast.FuncReturn:
+			return r.makeReturn(node.Children)
 		}
 	}
-	return nil
+
+	return nil, nil
 }
 
 func (r *Runtime) makeVar(node ast.Node, ret ...bool) (interface{}, error) {
@@ -124,6 +165,12 @@ func (r *Runtime) makeVar(node ast.Node, ret ...bool) (interface{}, error) {
 		value = r.parseTemplate(node)
 		node.Type = ast.VarString
 		break
+	case ast.VarVariable:
+		v, ok := r.variables[node.Value]
+		if !ok {
+			return nil, fmt.Errorf("variable %s not declared", node.Value)
+		}
+		value = v.Value
 	}
 
 	if len(ret) > 0 && ret[0] {
@@ -153,10 +200,15 @@ func (r *Runtime) callFn(node ast.Node) ([]packages.FuncReturn, error) {
 		if !ok {
 			return nil, fmt.Errorf("package %s not imported", parts[0])
 		}
-		return pkg.Run(parts[1], toPkgVar(v))
+		return pkg.Run(parts[1], r.toPkgVar(v))
 	}
 
-	return builtin.runFn(node.Name, toPkgVar(v))
+	fn, ok := r.funcs[node.Name]
+	if ok {
+		return r.Execute(fn.Body)
+	}
+
+	return builtin.runFn(node.Name, r.toPkgVar(v))
 }
 
 func (r *Runtime) getArgs(nodes []ast.Node) ([]variable, error) {
@@ -230,7 +282,6 @@ func (r *Runtime) handleExpression(node ast.Node) (interface{}, ast.NodeType, er
 
 func (r *Runtime) parseTemplate(node ast.Node) string {
 	tmpl := parseTemplate(node.Value)
-	fmt.Println(node.Value, tmpl)
 
 	var tpl string
 
@@ -255,4 +306,30 @@ func (r *Runtime) parseTemplate(node ast.Node) string {
 	}
 
 	return tpl
+}
+
+func (r *Runtime) makeReturn(nodes []ast.Node) ([]packages.FuncReturn, error) {
+	var returns []packages.FuncReturn
+
+	for _, v := range nodes {
+		val, err := r.makeVar(v, true)
+		if err != nil {
+			return nil, err
+		}
+
+		if v.Type == ast.VarVariable {
+			vv, ok := r.variables[v.Value]
+			if !ok {
+				return nil, fmt.Errorf("variable %s not declared", v.Value)
+			}
+			v.Type = vv.Type
+		}
+
+		returns = append(returns, packages.FuncReturn{
+			Type:  toPkgType(v.Type),
+			Value: val,
+		})
+	}
+
+	return returns, nil
 }

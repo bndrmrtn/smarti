@@ -9,9 +9,10 @@ type variable struct {
 	Type  ast.NodeType
 	Value interface{}
 	Ref   bool
+	Scope ast.NodeScope
 }
 
-func toPkgVar(v []variable) []packages.Variable {
+func (r *Runtime) toPkgVar(v []variable) []packages.Variable {
 	var vars []packages.Variable
 
 	for _, vv := range v {
@@ -26,4 +27,8 @@ func toPkgVar(v []variable) []packages.Variable {
 
 func toNodeType(v packages.VarType) ast.NodeType {
 	return ast.NodeType(v)
+}
+
+func toPkgType(t ast.NodeType) packages.VarType {
+	return packages.VarType(t)
 }

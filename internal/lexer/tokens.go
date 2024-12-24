@@ -39,6 +39,9 @@ const (
 	// Equal assigns a value to a variable
 	Assign
 
+	Increment
+	Decrement
+
 	// Nil is an uninitialized token
 	Nil
 	// StringLiteral is a string token: "
@@ -82,6 +85,11 @@ const (
 	Return
 	// Identifier is an identifier
 	Identifier
+
+	For = iota + 100
+	While
+	If
+	Else
 
 	Addition = iota + 1000
 	Subtraction
@@ -152,6 +160,18 @@ func isToken(s string) Token {
 		return Let
 	case "const":
 		return Const
+	case "func":
+		return Func
+	case "return":
+		return Return
+	case "for":
+		return For
+	case "while":
+		return While
+	case "if":
+		return If
+	case "else":
+		return Else
 	case "=":
 		return Assign
 	case "+":
@@ -164,6 +184,10 @@ func isToken(s string) Token {
 		return Division
 	case "%":
 		return Modulo
+	case "++":
+		return Increment
+	case "--":
+		return Decrement
 	case "nil":
 		return Nil
 	case ";":
@@ -182,6 +206,10 @@ func isToken(s string) Token {
 		return TemplateStart
 	case "</>":
 		return TemplateEnd
+	case "{":
+		return CurlyBraceStart
+	case "}":
+		return CurlyBraceEnd
 	default:
 		return Identifier
 	}

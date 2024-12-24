@@ -89,15 +89,6 @@ func (p *Parser) parse() error {
 
 			p.Nodes = append(p.Nodes, n)
 			continue
-		case lexer.FuncCall:
-			name, args := getFuncCall(token)
-			p.Nodes = append(p.Nodes, Node{
-				Token: lexer.FuncCall,
-				Type:  FuncCall,
-				Name:  name,
-				Args:  args,
-				Info:  getInfo(token),
-			})
 		case lexer.Use:
 			pkg := p.tokens[inx].Value
 			as := pkg
@@ -116,6 +107,57 @@ func (p *Parser) parse() error {
 				Name:  pkg,
 				Value: as,
 			})
+		case lexer.Func:
+			name, args := getFuncCall(p.tokens[inx])
+			inx++
+
+			body := []lexer.LexerToken{}
+			for inx < tokenLen && p.tokens[inx].Type != lexer.CurlyBraceEnd {
+				body = append(body, p.tokens[inx])
+				inx++
+			}
+
+			psr := NewParser(body)
+			if err := psr.Parse(); err != nil {
+				return err
+			}
+
+			for j := range psr.Nodes {
+				psr.Nodes[j].Scope = ScopeFunc
+			}
+
+			p.Nodes = append(p.Nodes, Node{
+				Token:    lexer.Func,
+				Type:     FuncDecl,
+				Children: psr.Nodes,
+				Name:     name,
+				Args:     args,
+			})
+		case lexer.FuncCall:
+			name, args := getFuncCall(token)
+			p.Nodes = append(p.Nodes, Node{
+				Token: lexer.FuncCall,
+				Type:  FuncCall,
+				Name:  name,
+				Args:  args,
+				Info:  getInfo(token),
+			})
+		case lexer.Return:
+			returnsRaw := []lexer.LexerToken{}
+			for inx < tokenLen && p.tokens[inx].Type != lexer.SemiColon {
+				returnsRaw = append(returnsRaw, p.tokens[inx])
+				inx++
+			}
+
+			var returns Node
+			bindValue(returnsRaw, &returns)
+
+			n := Node{
+				Token:    lexer.Return,
+				Type:     FuncReturn,
+				Children: []Node{returns},
+			}
+			p.Nodes = append(p.Nodes, n)
 		}
 	}
 

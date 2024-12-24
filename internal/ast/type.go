@@ -14,10 +14,14 @@ const (
 
 	VarUnknown NodeType = "#unknown#"
 
-	FuncCall NodeType = "func_call"
+	FuncCall   NodeType = "func_call"
+	FuncDecl   NodeType = "func_decl"
+	FuncReturn NodeType = "func_return"
 
 	VarExpression NodeType = "expression"
 	VarOperator   NodeType = "operator"
 
 	UsePackage NodeType = "use_package"
+
+	ForLoop NodeType = "for_loop"
 )

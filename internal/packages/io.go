@@ -22,7 +22,7 @@ func (i IO) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 	case "writef":
 		return i.fnWritef(args)
 	}
-	return nil, nil
+	return nil, fmt.Errorf("function io.%s does not exists", fn)
 }
 
 func (IO) Access(variable string) (*Variable, error) {

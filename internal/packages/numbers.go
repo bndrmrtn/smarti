@@ -2,6 +2,7 @@ package packages
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 )
 
@@ -12,7 +13,7 @@ func (r Numbers) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 	case "from":
 		return r.fnFrom(args)
 	}
-	return nil, nil
+	return nil, fmt.Errorf("function numbers.%s does not exists", fn)
 }
 
 func (Numbers) Access(variable string) (*Variable, error) {

@@ -2,6 +2,7 @@ package packages
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -24,7 +25,7 @@ func (r *Response) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 	case "status":
 		return r.fnStatus(args)
 	}
-	return nil, nil
+	return nil, fmt.Errorf("function response.%s does not exists", fn)
 }
 
 func (*Response) Access(variable string) (*Variable, error) {

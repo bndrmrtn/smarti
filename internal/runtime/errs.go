@@ -15,12 +15,14 @@ var (
 	ErrFuncNotDeclared         Err = fmt.Errorf("function not declared")
 	ErrVariableAlreadyDeclared Err = fmt.Errorf("variable already declared")
 	ErrPackageNotImported      Err = fmt.Errorf("package not imported")
+	ErrPackageNotExists        Err = fmt.Errorf("package not exists")
 	ErrNotExpression           Err = fmt.Errorf("not an expression")
 	ErrInvalidExpression       Err = fmt.Errorf("invalid expression")
 	ErrFuncCall                Err = fmt.Errorf("function call error")
 	ErrVariable                Err = fmt.Errorf("variable error")
 	ErrInvalidFuncArgument     Err = fmt.Errorf("invalid function argument")
 	ErrInvalidFuncReturn       Err = fmt.Errorf("invalid function return")
+	ErrInvalidTemplate         Err = fmt.Errorf("invalid template")
 )
 
 func nodeErr(typ Err, n ast.Node, err error) error {

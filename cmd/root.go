@@ -8,7 +8,7 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "smarti",
-	Short: "Smarti ✨ more than a template engine.",
+	Short: "Smarti ✨ More than a templating engine.",
 }
 
 func Execute() {

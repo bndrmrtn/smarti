@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"fmt"
 	"path/filepath"
 	"sync"
 
@@ -21,6 +22,8 @@ type CodeExecuter struct {
 	variables map[string]*variable
 	funcs     map[string]funcDecl
 
+	children []Executer
+
 	mu sync.Mutex
 }
 
@@ -34,6 +37,7 @@ func NewExecuter(runt *Runtime, parent Executer, file, namespace, scope string, 
 		runt:      runt,
 		variables: make(map[string]*variable),
 		funcs:     make(map[string]funcDecl),
+		children:  []Executer{},
 	}
 }
 
@@ -51,6 +55,10 @@ func (c *CodeExecuter) GetParent() Executer {
 
 func (c *CodeExecuter) GetScope() string {
 	return c.scope
+}
+
+func (c *CodeExecuter) runtime() *Runtime {
+	return c.runt
 }
 
 func (c *CodeExecuter) GetPackage(name string) (packages.Package, error) {
@@ -97,6 +105,24 @@ func (c *CodeExecuter) AssignVariable(name string, v *variable) error {
 	}
 
 	c.variables[name] = v
+	return nil
+}
+
+func (c *CodeExecuter) DeclareFunc(name string, fn funcDecl) error {
+	if c.parent != nil {
+		return c.parent.DeclareFunc(name, fn)
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	_, ok := c.funcs[name]
+	if ok {
+		return fmt.Errorf("function %s() already declared", name)
+	}
+
+	c.funcs[name] = fn
+
 	return nil
 }
 
@@ -155,14 +181,27 @@ func (c *CodeExecuter) Execute(nodes []ast.Node) ([]*packages.FuncReturn, error)
 				return nil, err
 			}
 		case ast.FuncDecl:
-			c.mu.Lock()
-			c.funcs[node.Name] = funcDecl{
+			c.DeclareFunc(node.Name, funcDecl{
 				Args: node.Args,
 				Body: node.Children,
-			}
-			c.mu.Unlock()
+			})
 		case ast.FuncReturn:
 			return c.funcGetReturn(node.Children)
+		case ast.IfStatement:
+			ok, err := c.evaluateStatement(node)
+			if err != nil {
+				return nil, err
+			}
+			if ok {
+				ret, err := c.Execute(node.Children)
+				if err != nil {
+					return nil, err
+				}
+
+				if ret != nil {
+					return ret, nil
+				}
+			}
 		}
 	}
 

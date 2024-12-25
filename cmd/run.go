@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"strings"
 
 	"github.com/bndrmrtn/smarti/internal/ast"
 	"github.com/bndrmrtn/smarti/internal/lexer"
@@ -31,6 +32,13 @@ func execRun(cmd *cobra.Command, args []string) {
 	}
 
 	debug := cmd.Flag("debug").Value.String() == "true"
+
+	for _, arg := range args {
+		if !strings.HasSuffix(arg, ".smt") {
+			cmd.Println("Smarti can only run files that has Smarti's (.smt) extesion.")
+			return
+		}
+	}
 
 	// Tokenize the source code with lexer
 	lx := lexer.New(args[0], args[1:]...)

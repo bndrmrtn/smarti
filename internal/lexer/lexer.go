@@ -50,7 +50,7 @@ func (l *Lexer) parse(file string) ([]LexerToken, error) {
 	}
 
 	hash := md5.New()
-	_, _ = io.Copy(hash, osFile)
+	hash.Write(b)
 	l.hash = hex.EncodeToString(hash.Sum(nil))
 
 	content := string(b) + "\n"
@@ -175,7 +175,20 @@ func (l *Lexer) parse(file string) ([]LexerToken, error) {
 		}
 
 		if char == '=' {
+			if inx < contentLength && content[inx] == '=' {
+				tokens = append(tokens, newLexerToken(Equal, "==", file, line, pos))
+				inx++
+				pos++
+				continue
+			}
 			tokens = append(tokens, newLexerToken(Assign, "=", file, line, pos))
+			continue
+		}
+
+		if char == '!' && inx < contentLength && content[inx] == '=' {
+			tokens = append(tokens, newLexerToken(NotEqual, "!=", file, line, pos))
+			inx++
+			pos++
 			continue
 		}
 

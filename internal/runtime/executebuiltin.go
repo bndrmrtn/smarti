@@ -52,5 +52,10 @@ func runFnImport(e Executer, args []*packages.Variable) ([]*packages.FuncReturn,
 		return nil, err
 	}
 
-	return e.Execute(ps.Nodes)
+	ex, execNodes, err := e.runtime().Executer(file, false, e, "global", make(map[string]packages.Package), ps.Nodes)
+	if err != nil {
+		return nil, err
+	}
+
+	return ex.Execute(execNodes)
 }

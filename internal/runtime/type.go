@@ -17,6 +17,7 @@ type Executer interface {
 	AssignVariable(name string, v *variable) error
 	GetVariable(name string) (*variable, error)
 	AccessVariableValue(name string) (*packages.Variable, error)
+	DeclareFunc(name string, fn funcDecl) error
 
 	GetPackages() map[string]packages.Package
 	GetPackage(name string) (packages.Package, error)
@@ -32,4 +33,5 @@ type Executer interface {
 
 	evaluateExpression(node ast.Node) (interface{}, ast.NodeType, error)
 	evaluateTemplate(node ast.Node) (string, error)
+	runtime() *Runtime
 }

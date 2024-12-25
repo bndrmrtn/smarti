@@ -24,5 +24,6 @@ const (
 	UsePackage NodeType = "use_package"
 	Namespace  NodeType = "namespace"
 
-	ForLoop NodeType = "for_loop"
+	ForLoop     NodeType = "for_loop"
+	IfStatement NodeType = "if_statement"
 )

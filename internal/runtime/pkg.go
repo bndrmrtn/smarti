@@ -12,6 +12,8 @@ func NewPackage(name string) packages.Package {
 		return packages.Numbers{}
 	case "env":
 		return packages.Env{}
+	case "httpsec":
+		return packages.HttpSec{}
 	}
 	return nil
 }

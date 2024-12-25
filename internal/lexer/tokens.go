@@ -91,6 +91,8 @@ const (
 	While
 	If
 	Else
+	Equal
+	NotEqual
 
 	Addition = iota + 1000
 	Subtraction
@@ -175,6 +177,10 @@ func isToken(s string) Token {
 		return If
 	case "else":
 		return Else
+	case "!=":
+		return NotEqual
+	case "==":
+		return Equal
 	case "=":
 		return Assign
 	case "+":

@@ -175,6 +175,57 @@ func (p *Parser) parse() error {
 				Children: []Node{returns},
 			}
 			p.Nodes = append(p.Nodes, n)
+		case lexer.If:
+			var (
+				conditionTokens []lexer.LexerToken
+				bodyTokens      []lexer.LexerToken
+			)
+
+			for inx < tokenLen && p.tokens[inx].Type != lexer.CurlyBraceStart {
+				conditionTokens = append(conditionTokens, p.tokens[inx])
+				inx++
+			}
+
+			if inx >= tokenLen || p.tokens[inx].Type != lexer.CurlyBraceStart {
+				return errors.New("syntax error: missing opening curly brace for if statement")
+			}
+			inx++
+
+			depth := 1
+			for inx < tokenLen && depth > 0 {
+				if p.tokens[inx].Type == lexer.CurlyBraceStart {
+					depth++
+				} else if p.tokens[inx].Type == lexer.CurlyBraceEnd {
+					depth--
+					if depth == 1 {
+						break
+					}
+				}
+
+				if depth > 0 {
+					bodyTokens = append(bodyTokens, p.tokens[inx])
+				}
+				inx++
+			}
+
+			if depth != 0 {
+				return errors.New("syntax error: unbalanced curly braces in if statement")
+			}
+
+			var condition Node
+			bindValue(conditionTokens, &condition)
+
+			bodyParser := NewParser(bodyTokens)
+			if err := bodyParser.Parse(); err != nil {
+				return err
+			}
+
+			p.Nodes = append(p.Nodes, Node{
+				Token:    lexer.If,
+				Type:     IfStatement,
+				Args:     []Node{condition},
+				Children: append([]Node{condition}, bodyParser.Nodes...),
+			})
 		}
 	}
 

@@ -41,7 +41,7 @@ func (c *CodeExecuter) createVariable(node ast.Node, ret ...bool) (interface{}, 
 	case ast.VarExpression:
 		v, typ, err := c.evaluateExpression(node)
 		if err != nil {
-			return nil, ast.VarUnknown, nodeErr(ErrVariable, node, err)
+			return nil, ast.VarUnknown, err
 		}
 		node.Type = typ
 		value = v
@@ -49,7 +49,7 @@ func (c *CodeExecuter) createVariable(node ast.Node, ret ...bool) (interface{}, 
 	case ast.FuncCall:
 		v, err := c.callFunc(node)
 		if err != nil {
-			return nil, ast.VarUnknown, nodeErr(ErrVariable, node, err)
+			return nil, ast.VarUnknown, err
 		}
 
 		if len(v) == 0 {
@@ -71,7 +71,7 @@ func (c *CodeExecuter) createVariable(node ast.Node, ret ...bool) (interface{}, 
 	case ast.VarTemplate:
 		v, err := c.evaluateTemplate(node)
 		if err != nil {
-			return nil, ast.VarUnknown, nodeErr(ErrVariable, node, err)
+			return nil, ast.VarUnknown, err
 		}
 		value = v
 		node.Type = ast.VarString
@@ -199,8 +199,8 @@ func (c *CodeExecuter) evaluateExpression(node ast.Node) (interface{}, ast.NodeT
 				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("operator cannot come before value"))
 			}
 
-			if len(result) > 1 && result[len(result)-1].Op {
-				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("two operator can't come after each other"))
+			if len(result) > 0 && result[len(result)-1].Op {
+				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("two operators cannot follow each other"))
 			}
 
 			result = append(result, expr{
@@ -218,7 +218,7 @@ func (c *CodeExecuter) evaluateExpression(node ast.Node) (interface{}, ast.NodeT
 			}
 
 			if typ != t {
-				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("different types in expression. %s not equals to %s", typ, t))
+				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("mismatched types in expression: %s vs %s", typ, t))
 			}
 
 			result = append(result, expr{
@@ -232,44 +232,139 @@ func (c *CodeExecuter) evaluateExpression(node ast.Node) (interface{}, ast.NodeT
 		return result[0].Value, typ, nil
 	}
 
-	var out interface{}
-	var i = 0
-	for i+3 <= len(result) {
-		out = result[i].Value
+	var (
+		compare bool
+		out     interface{}
+		i       int
+	)
+
+	for i+2 < len(result) {
+		if result[i].Op || !result[i+1].Op || result[i+2].Op {
+			return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("invalid expression structure"))
+		}
+
+		left, right := result[i].Value, result[i+2].Value
+
 		switch typ {
 		case ast.VarNumber:
-			if v, ok := result[i].Value.(int); ok {
-				switch result[i+1].Value {
-				case "+":
-					out = v + result[i+2].Value.(int)
-				case "-":
-					out = v - result[i+2].Value.(int)
-				case "*":
-					out = v * result[i+2].Value.(int)
-				case "/":
-					out = v / result[i+2].Value.(int)
-				}
-			} else {
-				return nil, ast.VarUnknown, ErrInvalidExpression
+			leftVal, leftOk := left.(int)
+			rightVal, rightOk := right.(int)
+			if !leftOk || !rightOk {
+				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("invalid number operands"))
 			}
+
+			switch result[i+1].Value {
+			case "+":
+				out = leftVal + rightVal
+			case "-":
+				out = leftVal - rightVal
+			case "*":
+				out = leftVal * rightVal
+			case "/":
+				if rightVal == 0 {
+					return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("division by zero"))
+				}
+				out = leftVal / rightVal
+			case "==":
+				out = leftVal == rightVal
+				compare = true
+			case "!=":
+				out = leftVal != rightVal
+				compare = true
+			default:
+				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("unsupported operator: %v", result[i+1].Value))
+			}
+
 		case ast.VarString, ast.VarSingleString:
-			if v, ok := result[i].Value.(string); ok {
-				switch result[i+1].Value {
-				case "+":
-					out = v + result[i+2].Value.(string)
-				case "-":
-					out = strings.Replace(v, result[i+2].Value.(string), "", -1)
-				}
-			} else {
-				return nil, ast.VarUnknown, ErrInvalidExpression
+			leftVal, leftOk := left.(string)
+			rightVal, rightOk := right.(string)
+			if !leftOk || !rightOk {
+				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("invalid string operands"))
 			}
+
+			switch result[i+1].Value {
+			case "+":
+				out = leftVal + rightVal
+			case "-":
+				out = strings.ReplaceAll(leftVal, rightVal, "")
+			case "==":
+				out = leftVal == rightVal
+				compare = true
+			case "!=":
+				out = leftVal != rightVal
+				compare = true
+			default:
+				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("unsupported operator: %v", result[i+1].Value))
+			}
+
+		case ast.VarBool:
+			leftVal, leftOk := left.(bool)
+			rightVal, rightOk := right.(bool)
+			if !leftOk || !rightOk {
+				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("invalid boolean operands"))
+			}
+
+			switch result[i+1].Value {
+			case "==":
+				out = leftVal == rightVal
+				compare = true
+			case "!=":
+				out = leftVal != rightVal
+				compare = true
+			default:
+				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("unsupported operator for booleans: %v", result[i+1].Value))
+			}
+
+		default:
+			return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("unsupported type: %v", typ))
 		}
-		i += 3
+
+		result = append(result[:i], expr{Op: false, Value: out})
+		result = append(result, result[i+1:]...)
 	}
 
-	return out, typ, nil
+	if compare {
+		typ = ast.VarBool
+	}
+
+	if len(result) == 1 {
+		return result[0].Value, typ, nil
+	}
+
+	return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("incomplete expression"))
 }
 
 func (c *CodeExecuter) evaluateTemplate(node ast.Node) (string, error) {
-	return node.Value, nil
+	parts := parseTemplate(node.Value)
+	var sb strings.Builder
+
+	for _, part := range parts {
+		if part.Static {
+			sb.WriteString(part.Content)
+			continue
+		}
+		v, err := c.GetVariable(part.Content)
+		if err != nil {
+			return "", nodeErr(ErrInvalidTemplate, node, err)
+		}
+		sb.WriteString(fmt.Sprint(v.Value))
+	}
+
+	return sb.String(), nil
+}
+
+func (c *CodeExecuter) evaluateStatement(node ast.Node) (bool, error) {
+	ok, typ, err := c.evaluateExpression(ast.Node{
+		Type:     ast.VarExpression,
+		Children: node.Args,
+	})
+	if err != nil {
+		return false, err
+	}
+
+	if typ != ast.VarBool {
+		return false, nodeErr(ErrInvalidExpression, node, fmt.Errorf("invald expression output"))
+	}
+
+	return ok.(bool), nil
 }

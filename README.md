@@ -43,6 +43,7 @@ writef("Hello, %s!\n", name);
 ### Our Goal
 
 ```smarti
+namespace testserver;
 use request; // import the request module to get request data
 use response as rw; // import the response module to send data to the client  (rw is an alias for response writer)
 
@@ -53,13 +54,13 @@ if request.method != "POST" {
 
 for let i = 0; i < api.data.length; i++ {
   let data = api.data[i];
-  write(<>
+  rw.write(<>
     <h1>{{ data.title }}</h1>
     <p>{{ data.content }}</p>
   </>);
 }
 
-wr.status(200); // Set the status code to 200 and send the response
+rw.status(200); // Set the status code to 200 and send the response
 ```
 
 This code is our goal. We want to make a simple template language that can be used in any project.
@@ -72,12 +73,13 @@ If you want to handle errors, you can use a special macro called `@err`.
 Err macro creates a temporary variable called `err` that contains the error message.
 
 ```smarti
+namespace main;
 use json;
 use io;
 
-let data = json.from('{"name": "John"}') @err;
+let data = json.from('{"name": "John""}') @err;
 if err != nil {
-  io.writef("Error: %v\n", err);
+  io.writef("Error: %v\n", err); // Will display a syntax error
   return;
 }
 ```

@@ -69,7 +69,7 @@ func (r *Runtime) Executer(file string, snippet bool, parent Executer, scope str
 
 				pkg := NewPackage(node.Name)
 				if pkg == nil {
-					return nil, nil, fmt.Errorf("package %s not found", node.Name)
+					return nil, nil, nodeErr(ErrPackageNotExists, node, fmt.Errorf("package '%s' not exists but used", node.Name))
 				}
 				pkgs[node.Value] = pkg
 			}

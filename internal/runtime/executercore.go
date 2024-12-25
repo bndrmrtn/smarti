@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Knetic/govaluate"
 	"github.com/bndrmrtn/smarti/internal/ast"
 	"github.com/bndrmrtn/smarti/internal/packages"
 )
@@ -177,6 +178,7 @@ func (c *CodeExecuter) funcGetReturn(nodes []ast.Node) ([]*packages.FuncReturn, 
 	return returns, nil
 }
 
+/*
 func (c *CodeExecuter) evaluateExpression(node ast.Node) (interface{}, ast.NodeType, error) {
 	if node.Type != ast.VarExpression {
 		return nil, ast.VarNil, ErrNotExpression
@@ -332,6 +334,49 @@ func (c *CodeExecuter) evaluateExpression(node ast.Node) (interface{}, ast.NodeT
 	}
 
 	return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("incomplete expression"))
+}
+*/
+
+func (c *CodeExecuter) evaluateExpression(node ast.Node) (interface{}, ast.NodeType, error) {
+	if node.Type != ast.VarExpression {
+		return nil, ast.VarNil, nodeErr(ErrNotExpression, node, fmt.Errorf("node %s is not an expression", node.Name))
+	}
+
+	var expressionList []string
+	var args = make(map[string]interface{})
+
+	for _, n := range node.Children {
+		switch n.Type {
+		case ast.VarOperator:
+			expressionList = append(expressionList, n.Value)
+		default:
+			v, t, err := c.createVariable(n, true)
+			if err != nil {
+				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, err)
+			}
+
+			switch t {
+			case ast.VarNumber:
+				expressionList = append(expressionList, strconv.Itoa(v.(int)))
+			case ast.VarString, ast.VarSingleString:
+				expressionList = append(expressionList, strconv.Quote(v.(string)))
+			case ast.VarBool:
+				expressionList = append(expressionList, strconv.FormatBool(v.(bool)))
+			}
+		}
+	}
+
+	expression, err := govaluate.NewEvaluableExpression(strings.Join(expressionList, " "))
+	if err != nil {
+		return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, err)
+	}
+
+	result, err := expression.Evaluate(args)
+	if err != nil {
+		return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, err)
+	}
+
+	return result, getType(result), nil
 }
 
 func (c *CodeExecuter) evaluateTemplate(node ast.Node) (string, error) {

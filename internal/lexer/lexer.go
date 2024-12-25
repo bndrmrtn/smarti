@@ -192,6 +192,20 @@ func (l *Lexer) parse(file string) ([]LexerToken, error) {
 			continue
 		}
 
+		if char == '&' && inx < contentLength && content[inx] == '&' {
+			tokens = append(tokens, newLexerToken(And, "&&", file, line, pos))
+			inx++
+			pos++
+			continue
+		}
+
+		if char == '|' && inx < contentLength && content[inx] == '|' {
+			tokens = append(tokens, newLexerToken(Or, "||", file, line, pos))
+			inx++
+			pos++
+			continue
+		}
+
 		if char == '{' {
 			tokens = append(tokens, newLexerToken(CurlyBraceStart, "{", file, line, pos))
 			continue

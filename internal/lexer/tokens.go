@@ -94,6 +94,9 @@ const (
 	Equal
 	NotEqual
 
+	And
+	Or
+
 	Addition = iota + 1000
 	Subtraction
 	Multiplication

@@ -20,28 +20,28 @@ func (c *CodeExecuter) createVariable(node ast.Node, ret ...bool) (interface{}, 
 	case ast.VarNumber:
 		v, err := strconv.Atoi(node.Value)
 		if err != nil {
-			return nil, ast.VarUnknown, nodeErr(ErrVariable, node, fmt.Errorf("invalid number %v", node.Value))
+			return nil, ast.VarUnknown, nodeErr(ErrVariable, node, fmt.Errorf("invalid number: %v", node.Value))
 		}
 		value = v
 		break
 	case ast.VarFloat:
 		v, err := strconv.ParseFloat(node.Value, 64)
 		if err != nil {
-			return nil, ast.VarUnknown, nodeErr(ErrVariable, node, fmt.Errorf("invalid float %v", node.Value))
+			return nil, ast.VarUnknown, nodeErr(ErrVariable, node, fmt.Errorf("invalid float: %v", node.Value))
 		}
 		value = v
 		break
 	case ast.VarBool:
 		v, err := strconv.ParseBool(node.Value)
 		if err != nil {
-			return nil, ast.VarUnknown, err
+			return nil, ast.VarUnknown, nodeErr(ErrVariable, node, fmt.Errorf("invalid boolean: %v", node.Value))
 		}
 		value = v
 		break
 	case ast.VarExpression:
 		v, typ, err := c.evaluateExpression(node)
 		if err != nil {
-			return nil, ast.VarUnknown, err
+			return nil, ast.VarUnknown, nodeErr(ErrVariable, node, err)
 		}
 		node.Type = typ
 		value = v
@@ -49,7 +49,7 @@ func (c *CodeExecuter) createVariable(node ast.Node, ret ...bool) (interface{}, 
 	case ast.FuncCall:
 		v, err := c.callFunc(node)
 		if err != nil {
-			return nil, ast.VarUnknown, err
+			return nil, ast.VarUnknown, nodeErr(ErrVariable, node, err)
 		}
 
 		if len(v) == 0 {
@@ -64,10 +64,17 @@ func (c *CodeExecuter) createVariable(node ast.Node, ret ...bool) (interface{}, 
 	case ast.VarVariable:
 		v, err := c.GetVariable(node.Value)
 		if err != nil {
-			return nil, ast.VarUnknown, err
+			return nil, ast.VarUnknown, nodeErr(ErrVariable, node, fmt.Errorf("invalid variable reference: '%v'", node.Value))
 		}
 		node.Type = v.Type
 		value = v.Value
+	case ast.VarTemplate:
+		v, err := c.evaluateTemplate(node)
+		if err != nil {
+			return nil, ast.VarUnknown, nodeErr(ErrVariable, node, err)
+		}
+		value = v
+		node.Type = ast.VarString
 	}
 
 	if len(ret) > 0 && ret[0] {
@@ -95,17 +102,36 @@ func (c *CodeExecuter) callFunc(node ast.Node) ([]*packages.FuncReturn, error) {
 		parts := strings.Split(node.Name, ".")
 		pkg, ok := c.uses[parts[0]]
 		if !ok {
-			return nil, fmt.Errorf("package %s not imported", parts[0])
+			return nil, nodeErr(ErrPackageNotImported, node, fmt.Errorf("package %s not imported", parts[0]))
 		}
 		return pkg.Run(parts[1], toPkgVar(v))
 	}
 
 	fn, ok := c.funcs[node.Name]
 	if ok {
-		return c.runt.Execute(c, "global", c.GetPackages(), fn.Body)
+		ex, nodes, err := c.runt.Executer(c.file, true, c, "func", c.GetPackages(), fn.Body)
+		if err != nil {
+			return nil, nodeErr(ErrFuncCall, node, err)
+		}
+
+		if len(fn.Args) != len(v) {
+			return nil, nodeErr(ErrFuncCall, node, fmt.Errorf("invalid number of arguments. expected %d, got %d", len(fn.Args), len(v)))
+		}
+
+		for i, arg := range fn.Args {
+			err := ex.DeclareVariable(arg.Value, v[i])
+			if err != nil {
+				return nil, nodeErr(ErrFuncCall, node, err)
+			}
+		}
+
+		return ex.Execute(nodes)
 	}
 
-	// TODO: Check if it is a builtin function
+	if c.parent != nil {
+		return c.parent.callFunc(node)
+	}
+
 	return c.ExecuteBuiltinMethod(c, node.Name, toPkgVar(v))
 }
 
@@ -114,15 +140,15 @@ func (c *CodeExecuter) funcGetArgs(nodes []ast.Node) ([]*variable, error) {
 	for i, node := range nodes {
 		switch node.Type {
 		case ast.VarVariable:
-			v, err := c.GetVariable(node.Name)
+			v, err := c.GetVariable(node.Value)
 			if err != nil {
-				return nil, err
+				return nil, nodeErr(ErrInvalidFuncArgument, node, fmt.Errorf("invalid variable reference: '%v'", node.Value))
 			}
 			args[i] = v
 		default:
 			v, t, err := c.createVariable(node, true)
 			if err != nil {
-				return nil, err
+				return nil, nodeErr(ErrInvalidFuncArgument, node, err)
 			}
 			args[i] = &variable{
 				Type:  t,
@@ -139,7 +165,7 @@ func (c *CodeExecuter) funcGetReturn(nodes []ast.Node) ([]*packages.FuncReturn, 
 	for _, v := range nodes {
 		val, t, err := c.createVariable(v, true)
 		if err != nil {
-			return nil, err
+			return nil, nodeErr(ErrInvalidFuncReturn, v, err)
 		}
 
 		returns = append(returns, &packages.FuncReturn{
@@ -170,11 +196,11 @@ func (c *CodeExecuter) evaluateExpression(node ast.Node) (interface{}, ast.NodeT
 		switch n.Type {
 		case ast.VarOperator:
 			if typ == "" {
-				return nil, ast.VarUnknown, ErrInvalidExpression
+				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("operator cannot come before value"))
 			}
 
 			if len(result) > 1 && result[len(result)-1].Op {
-				return nil, ast.VarUnknown, ErrInvalidExpression
+				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("two operator can't come after each other"))
 			}
 
 			result = append(result, expr{
@@ -184,7 +210,7 @@ func (c *CodeExecuter) evaluateExpression(node ast.Node) (interface{}, ast.NodeT
 		default:
 			v, t, err := c.createVariable(n, true)
 			if err != nil {
-				return nil, ast.VarUnknown, err
+				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, err)
 			}
 
 			if typ == "" {
@@ -192,7 +218,7 @@ func (c *CodeExecuter) evaluateExpression(node ast.Node) (interface{}, ast.NodeT
 			}
 
 			if typ != t {
-				return nil, ast.VarUnknown, ErrInvalidExpression
+				return nil, ast.VarUnknown, nodeErr(ErrInvalidExpression, node, fmt.Errorf("different types in expression. %s not equals to %s", typ, t))
 			}
 
 			result = append(result, expr{
@@ -242,4 +268,8 @@ func (c *CodeExecuter) evaluateExpression(node ast.Node) (interface{}, ast.NodeT
 	}
 
 	return out, typ, nil
+}
+
+func (c *CodeExecuter) evaluateTemplate(node ast.Node) (string, error) {
+	return node.Value, nil
 }

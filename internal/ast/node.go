@@ -1,6 +1,9 @@
 package ast
 
 import (
+	"path/filepath"
+	"strconv"
+
 	"github.com/bndrmrtn/smarti/internal/lexer"
 	"github.com/fatih/color"
 )
@@ -27,7 +30,11 @@ type NodeFileInfo struct {
 func (n NodeFileInfo) String() string {
 	blue := color.New(color.FgBlue, color.Bold).SprintFunc()
 
-	return blue(n.File) + ":" + blue(n.Line) + ":" + blue(n.Pos)
+	str := blue("File: ") + filepath.Clean(n.File) + "\n"
+	str += blue("Line: ") + strconv.Itoa(n.Line) + "\n"
+	str += blue("Pos: ") + strconv.Itoa(n.Pos)
+
+	return str
 }
 
 type NodeScope string

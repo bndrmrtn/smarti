@@ -17,6 +17,10 @@ func (e Env) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 	return nil, nil
 }
 
+func (e Env) Access(variable string) (*Variable, error) {
+	return nil, errors.New("env package does not have any variables")
+}
+
 func (Env) fnGet(args []*Variable) ([]*FuncReturn, error) {
 	if len(args) != 1 {
 		return nil, errors.New("get method only allows one argument")

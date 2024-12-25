@@ -28,21 +28,37 @@ func (r *Runtime) With(pkgName string, pkg packages.Package) {
 }
 
 // Run executes the given nodes as a main program
-func (r *Runtime) Run(nodes []ast.Node) error {
-	_, err := r.Execute(nil, "global", r.with, nodes)
+func (r *Runtime) Run(file string, nodes []ast.Node) error {
+	_, err := r.Execute(file, false, nil, "global", r.with, nodes)
 	return err
 }
 
 // Execute executes the given nodes and returns the result if any
-func (r *Runtime) Execute(parent Executer, scope string, pkgs map[string]packages.Package, nodes []ast.Node) ([]*packages.FuncReturn, error) {
+func (r *Runtime) Execute(file string, snippet bool, parent Executer, scope string, pkgs map[string]packages.Package, nodes []ast.Node) ([]*packages.FuncReturn, error) {
+	ex, execNodes, err := r.Executer(file, snippet, parent, scope, pkgs, nodes)
+	if err != nil {
+		return nil, err
+	}
+	return ex.Execute(execNodes)
+}
+
+func (r *Runtime) Executer(file string, snippet bool, parent Executer, scope string, pkgs map[string]packages.Package, nodes []ast.Node) (Executer, []ast.Node, error) {
+	if snippet {
+		ex := NewExecuter(r, parent, file, parent.GetNamespace(), scope, parent.GetPackages())
+		return ex, nodes, nil
+	}
+
 	var (
-		namespace = "main"
+		namespace = ""
 		execNodes []ast.Node
 	)
 
 	for _, node := range nodes {
 		switch node.Type {
 		case ast.Namespace:
+			if namespace != "" {
+				return nil, nil, fmt.Errorf("namespace already defined")
+			}
 			namespace = node.Name
 		case ast.UsePackage:
 			if _, ok := pkgs[node.Name]; !ok {
@@ -53,7 +69,7 @@ func (r *Runtime) Execute(parent Executer, scope string, pkgs map[string]package
 
 				pkg := NewPackage(node.Name)
 				if pkg == nil {
-					return nil, fmt.Errorf("package %s not found", node.Name)
+					return nil, nil, fmt.Errorf("package %s not found", node.Name)
 				}
 				pkgs[node.Value] = pkg
 			}
@@ -62,6 +78,15 @@ func (r *Runtime) Execute(parent Executer, scope string, pkgs map[string]package
 		}
 	}
 
-	ex := NewExecuter(r, parent, namespace, scope, pkgs)
-	return ex.Execute(execNodes)
+	if namespace == "" {
+		namespace = "main"
+	}
+
+	if parent != nil && namespace != parent.GetNamespace() {
+		// if the namespace is different from the parent, then the parent is not the parent
+		parent = nil
+	}
+
+	ex := NewExecuter(r, parent, file, namespace, scope, pkgs)
+	return ex, execNodes, nil
 }

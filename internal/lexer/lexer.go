@@ -65,6 +65,12 @@ func (l *Lexer) parse(file string) ([]LexerToken, error) {
 		if char == ' ' || char == '\t' || char == '\n' || char == '\r' {
 			inx++
 			pos++
+
+			if char == '\n' {
+				line++
+				pos = 0
+			}
+
 			continue
 		}
 

@@ -15,6 +15,10 @@ func (r Numbers) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 	return nil, nil
 }
 
+func (Numbers) Access(variable string) (*Variable, error) {
+	return nil, errors.New("numbers package does not have any variables")
+}
+
 func (Numbers) fnFrom(args []*Variable) ([]*FuncReturn, error) {
 	if len(args) != 1 {
 		return nil, errors.New("from expects one argument")

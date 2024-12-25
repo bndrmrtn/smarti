@@ -23,6 +23,10 @@ func (r *Request) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 	return nil, nil
 }
 
+func (*Request) Access(variable string) (*Variable, error) {
+	return nil, errors.New("request package does not have any variables")
+}
+
 func (r *Request) fnMethod(args []*Variable) ([]*FuncReturn, error) {
 	if len(args) != 0 {
 		return nil, errors.New("method does not accept any argument")

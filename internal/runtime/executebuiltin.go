@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/bndrmrtn/smarti/internal/ast"
 	"github.com/bndrmrtn/smarti/internal/lexer"
@@ -40,7 +41,7 @@ func runFnImport(e Executer, args []*packages.Variable) ([]*packages.FuncReturn,
 		return nil, fmt.Errorf("import function expects string argument, %s given", args[0].Type)
 	}
 
-	file := args[0].Value.(string)
+	file := filepath.Join(e.GetDir(), args[0].Value.(string))
 	lx := lexer.New(file)
 	if err := lx.Parse(); err != nil {
 		return nil, err

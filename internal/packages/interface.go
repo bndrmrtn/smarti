@@ -12,4 +12,5 @@ type FuncReturn struct {
 
 type Package interface {
 	Run(fn string, args []*Variable) ([]*FuncReturn, error)
+	Access(variable string) (*Variable, error)
 }

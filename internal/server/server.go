@@ -10,6 +10,7 @@ import (
 	"github.com/bndrmrtn/smarti/internal/lexer"
 	"github.com/bndrmrtn/smarti/internal/packages"
 	"github.com/bndrmrtn/smarti/internal/runtime"
+	"github.com/fatih/color"
 )
 
 type Server struct {
@@ -35,6 +36,7 @@ func New(directory string) (*Server, error) {
 }
 
 func (s *Server) Start(listenAddr string) error {
+	color.NoColor = true
 	return http.ListenAndServe(listenAddr, s)
 }
 
@@ -49,14 +51,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if nodes, ok := s.booster[path]; ok {
-		s.execute(nodes, w, r)
-		return
-	}
-
 	lx := lexer.New(path)
 	if err := lx.Parse(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if nodes, ok := s.booster[lx.Sum()]; ok {
+		s.execute(path, nodes, w, r)
 		return
 	}
 
@@ -66,18 +68,18 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.booster[path] = parser.Nodes
+	s.booster[lx.Sum()] = parser.Nodes
 
-	s.execute(parser.Nodes, w, r)
+	s.execute(path, parser.Nodes, w, r)
 }
 
-func (s *Server) execute(nodes []ast.Node, w http.ResponseWriter, r *http.Request) {
+func (s *Server) execute(file string, nodes []ast.Node, w http.ResponseWriter, r *http.Request) {
 	runt := runtime.New()
 
 	runt.With("response", packages.NewResponse(w))
 	runt.With("request", packages.NewRequest(r))
 
-	if err := runt.Run(nodes); err != nil {
+	if err := runt.Run(file, nodes); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

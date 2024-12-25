@@ -27,6 +27,10 @@ func (r *Response) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 	return nil, nil
 }
 
+func (*Response) Access(variable string) (*Variable, error) {
+	return nil, errors.New("response package does not have any variables")
+}
+
 func (r *Response) fnWrite(args []*Variable) ([]*FuncReturn, error) {
 	if len(args) != 1 {
 		return nil, errors.New("write method only accepts one argument")
@@ -55,7 +59,7 @@ func (r *Response) fnHeader(args []*Variable) ([]*FuncReturn, error) {
 }
 
 func (r *Response) fnStatus(args []*Variable) ([]*FuncReturn, error) {
-	if len(args) != 2 {
+	if len(args) != 1 {
 		return nil, errors.New("status method accepts 1 arguments")
 	}
 

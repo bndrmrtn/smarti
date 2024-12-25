@@ -7,6 +7,8 @@ import (
 )
 
 type Executer interface {
+	GetDir() string
+
 	GetNamespace() string
 	GetParent() Executer
 	GetScope() string
@@ -29,4 +31,5 @@ type Executer interface {
 	funcGetReturn(nodes []ast.Node) ([]*packages.FuncReturn, error)
 
 	evaluateExpression(node ast.Node) (interface{}, ast.NodeType, error)
+	evaluateTemplate(node ast.Node) (string, error)
 }

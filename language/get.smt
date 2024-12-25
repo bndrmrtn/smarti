@@ -1,2 +1,5 @@
-let content = "other content";
-return content;
+namespace main;
+
+func hello() {
+    io.writeln("Hello, World!");
+}

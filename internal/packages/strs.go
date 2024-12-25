@@ -1,6 +1,7 @@
 package packages
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -15,6 +16,10 @@ func (s Strs) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 		return s.fnTrim(args)
 	}
 	return nil, nil
+}
+
+func (Strs) Access(variable string) (*Variable, error) {
+	return nil, errors.New("strs package does not have any variables")
 }
 
 func (Strs) fnLength(args []*Variable) ([]*FuncReturn, error) {

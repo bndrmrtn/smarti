@@ -90,7 +90,8 @@ func (p *Parser) parse() error {
 			p.Nodes = append(p.Nodes, n)
 			continue
 		case lexer.Use:
-			pkg := p.tokens[inx].Value
+			pkgToken := p.tokens[inx]
+			pkg := pkgToken.Value
 			as := pkg
 			if inx+3 < tokenLen && p.tokens[inx+1].Value == "as" {
 				inx += 2
@@ -106,9 +107,11 @@ func (p *Parser) parse() error {
 				Type:  UsePackage,
 				Name:  pkg,
 				Value: as,
+				Info:  getInfo(pkgToken),
 			})
 		case lexer.Namespace:
 			name := p.tokens[inx].Value
+			info := getInfo(p.tokens[inx])
 			inx++
 			if inx < tokenLen && p.tokens[inx].Type != lexer.SemiColon {
 				return errors.New("syntax error: missing semicolon")
@@ -117,9 +120,11 @@ func (p *Parser) parse() error {
 				Token: lexer.Namespace,
 				Type:  Namespace,
 				Name:  name,
+				Info:  info,
 			})
 		case lexer.Func:
 			name, args := getFuncCall(p.tokens[inx])
+			info := getInfo(p.tokens[inx])
 			inx++
 
 			body := []lexer.LexerToken{}
@@ -143,6 +148,7 @@ func (p *Parser) parse() error {
 				Children: psr.Nodes,
 				Name:     name,
 				Args:     args,
+				Info:     info,
 			})
 		case lexer.FuncCall:
 			name, args := getFuncCall(token)

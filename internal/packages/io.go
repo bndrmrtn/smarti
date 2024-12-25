@@ -1,6 +1,7 @@
 package packages
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -22,6 +23,10 @@ func (i IO) Run(fn string, args []*Variable) ([]*FuncReturn, error) {
 		return i.fnWritef(args)
 	}
 	return nil, nil
+}
+
+func (IO) Access(variable string) (*Variable, error) {
+	return nil, errors.New("io package does not have any variables")
 }
 
 func (IO) fnRead(args []*Variable) ([]*FuncReturn, error) {

@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"path/filepath"
 	"sync"
 
 	"github.com/bndrmrtn/smarti/internal/ast"
@@ -9,6 +10,8 @@ import (
 )
 
 type CodeExecuter struct {
+	file string
+
 	parent    Executer
 	scope     string
 	namespace string
@@ -21,8 +24,9 @@ type CodeExecuter struct {
 	mu sync.Mutex
 }
 
-func NewExecuter(runt *Runtime, parent Executer, namespace, scope string, uses map[string]packages.Package) Executer {
+func NewExecuter(runt *Runtime, parent Executer, file, namespace, scope string, uses map[string]packages.Package) Executer {
 	return &CodeExecuter{
+		file:      filepath.Clean(file),
 		parent:    parent,
 		namespace: namespace,
 		scope:     scope,
@@ -31,6 +35,10 @@ func NewExecuter(runt *Runtime, parent Executer, namespace, scope string, uses m
 		variables: make(map[string]*variable),
 		funcs:     make(map[string]funcDecl),
 	}
+}
+
+func (c *CodeExecuter) GetDir() string {
+	return filepath.Dir(c.file)
 }
 
 func (c *CodeExecuter) GetNamespace() string {

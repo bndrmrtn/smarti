@@ -189,27 +189,42 @@ func (p *Parser) parse() error {
 			if inx >= tokenLen || p.tokens[inx].Type != lexer.CurlyBraceStart {
 				return errors.New("syntax error: missing opening curly brace for if statement")
 			}
+
+			for inx >= tokenLen || p.tokens[inx].Type != lexer.CurlyBraceStart {
+				inx++
+			}
+
+			depth := 0
+
+			if inx >= tokenLen || p.tokens[inx].Type != lexer.CurlyBraceStart {
+				return errors.New("syntax error: missing opening curly brace")
+			}
+
+			depth++
 			inx++
 
-			depth := 1
-			for inx < tokenLen && depth > 0 {
-				if p.tokens[inx].Type == lexer.CurlyBraceStart {
+			for inx < tokenLen {
+				token := p.tokens[inx]
+
+				if token.Type == lexer.CurlyBraceStart {
 					depth++
-				} else if p.tokens[inx].Type == lexer.CurlyBraceEnd {
+				} else if token.Type == lexer.CurlyBraceEnd {
 					depth--
-					if depth == 1 {
+					if depth == 0 {
+						inx++
 						break
 					}
 				}
 
 				if depth > 0 {
-					bodyTokens = append(bodyTokens, p.tokens[inx])
+					bodyTokens = append(bodyTokens, token)
 				}
+
 				inx++
 			}
 
 			if depth != 0 {
-				return errors.New("syntax error: unbalanced curly braces in if statement")
+				return errors.New("syntax error: unbalanced curly braces")
 			}
 
 			var condition Node
@@ -226,6 +241,89 @@ func (p *Parser) parse() error {
 				Args:     []Node{condition},
 				Children: append([]Node{condition}, bodyParser.Nodes...),
 			})
+		case lexer.For:
+			var (
+				initTokens      []lexer.LexerToken
+				conditionTokens []lexer.LexerToken
+				postTokens      []lexer.LexerToken
+				bodyTokens      []lexer.LexerToken
+			)
+
+			// Első szakasz: init
+			for inx < tokenLen && p.tokens[inx].Type != lexer.SemiColon {
+				initTokens = append(initTokens, p.tokens[inx])
+				inx++
+			}
+
+			if inx >= tokenLen || p.tokens[inx].Type != lexer.SemiColon {
+				return errors.New("syntax error: missing semicolon after init statement in for loop")
+			}
+			inx++ // Átlépünk a ';' után
+
+			// Második szakasz: condition
+			for inx < tokenLen && p.tokens[inx].Type != lexer.SemiColon {
+				conditionTokens = append(conditionTokens, p.tokens[inx])
+				inx++
+			}
+
+			if inx >= tokenLen || p.tokens[inx].Type != lexer.SemiColon {
+				return errors.New("syntax error: missing semicolon after condition statement in for loop")
+			}
+			inx++ // Átlépünk a ';' után
+
+			// Harmadik szakasz: post
+			for inx < tokenLen && p.tokens[inx].Type != lexer.CurlyBraceStart {
+				postTokens = append(postTokens, p.tokens[inx])
+				inx++
+			}
+
+			if inx >= tokenLen || p.tokens[inx].Type != lexer.CurlyBraceStart {
+				return errors.New("syntax error: missing opening curly brace for for loop body")
+			}
+			inx++ // Átlépünk a '{' után
+
+			// Negyedik szakasz: body
+			depth := 1
+			for inx < tokenLen && depth > 0 {
+				if p.tokens[inx].Type == lexer.CurlyBraceStart {
+					depth++
+				} else if p.tokens[inx].Type == lexer.CurlyBraceEnd {
+					depth--
+					if depth == 0 {
+						break
+					}
+				}
+
+				if depth > 0 {
+					bodyTokens = append(bodyTokens, p.tokens[inx])
+				}
+				inx++
+			}
+
+			if depth != 0 {
+				return errors.New("syntax error: unbalanced curly braces in for loop body")
+			}
+
+			// Parsoljuk az init, condition és post részeket
+			var initNode, conditionNode, postNode Node
+			bindValue(initTokens, &initNode)
+			bindValue(conditionTokens, &conditionNode)
+			bindValue(postTokens, &postNode)
+
+			// Parsoljuk a body-t
+			bodyParser := NewParser(bodyTokens)
+			if err := bodyParser.Parse(); err != nil {
+				return err
+			}
+
+			// Létrehozzuk a for loop node-ot
+			p.Nodes = append(p.Nodes, Node{
+				Token:    lexer.For,
+				Type:     ForLoop,
+				Args:     []Node{initNode, conditionNode, postNode},
+				Children: bodyParser.Nodes,
+			})
+
 		}
 	}
 

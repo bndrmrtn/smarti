@@ -206,6 +206,20 @@ func (l *Lexer) parse(file string) ([]LexerToken, error) {
 			continue
 		}
 
+		if char == '+' && inx < contentLength && content[inx] == '+' {
+			tokens = append(tokens, newLexerToken(Increment, "++", file, line, pos))
+			inx++
+			pos++
+			continue
+		}
+
+		if char == '-' && inx < contentLength && content[inx] == '-' {
+			tokens = append(tokens, newLexerToken(Decrement, "--", file, line, pos))
+			inx++
+			pos++
+			continue
+		}
+
 		if char == '{' {
 			tokens = append(tokens, newLexerToken(CurlyBraceStart, "{", file, line, pos))
 			continue
@@ -228,7 +242,7 @@ func (l *Lexer) Sum() string {
 }
 
 func isIdentifierChar(c byte) bool {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_') || (c >= '0' && c <= '9') || c == '.'
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_') || (c >= '0' && c <= '9') || c == '.' || c == '#'
 }
 
 func pref(content string, length, inx int, token Token) bool {

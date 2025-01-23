@@ -202,6 +202,9 @@ func (c *CodeExecuter) Execute(nodes []ast.Node) ([]*packages.FuncReturn, error)
 					return ret, nil
 				}
 			}
+			/*case ast.ForLoop:
+			loopEx := NewExecuter(c.runt, c, c.file, c.namespace, "for", c.uses)
+			initial := node.Args[0]*/
 		}
 	}
 

@@ -101,6 +101,46 @@ func (c *CodeExecuter) callFunc(node ast.Node) ([]*packages.FuncReturn, error) {
 
 	if strings.Contains(node.Name, ".") {
 		parts := strings.Split(node.Name, ".")
+		vari, ok := c.variables[parts[0]]
+		if ok {
+			if fn, ok := c.funcs[string(vari.Type)+"#"+parts[1]]; ok {
+				ex, nodes, err := c.runt.Executer(c.file, true, c, "func", c.GetPackages(), fn.Body)
+				if err != nil {
+					return nil, nodeErr(ErrFuncCall, node, err)
+				}
+
+				v = append([]*variable{vari}, v...)
+
+				if len(fn.Args) != len(v) {
+					return nil, nodeErr(ErrFuncCall, node, fmt.Errorf("invalid number of arguments. expected %d, got %d", len(fn.Args), len(v)))
+				}
+
+				for i, arg := range fn.Args {
+					err := ex.DeclareVariable(arg.Value, v[i])
+					if err != nil {
+						return nil, nodeErr(ErrFuncCall, node, err)
+					}
+				}
+
+				ret, err := ex.Execute(nodes)
+				if err != nil {
+					return nil, err
+				}
+
+				if len(ret) == 0 {
+					return nil, nil
+				}
+
+				if len(ret) != 1 {
+					return nil, nodeErr(ErrFuncCall, node, fmt.Errorf("type function must return a single value"))
+				}
+
+				vari.Type = ast.NodeType(ret[0].Type)
+				vari.Value = ret[0].Value
+				return nil, nil
+			}
+		}
+
 		pkg, ok := c.uses[parts[0]]
 		if !ok {
 			return nil, nodeErr(ErrPackageNotImported, node, fmt.Errorf("package %s not imported", parts[0]))

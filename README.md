@@ -1,3 +1,8 @@
+## No longer maintained
+
+This language is no longer maintained. Here is the newest version of my programming language: [Nubo](https://github.com/nubolang/nubo).
+Nubo provides a much better developer expirience by ditching semicolons and having a better syntax parser with a bigger standard library.
+
 # Smarti - More than a simple templating engine
 
 Smarti is a templating engine that is designed to help backend developers deliver content to the frontend faster.
